@@ -3,10 +3,7 @@
 
 
 from rich import print as rich_print
-from gogi.gogi import GoGi
-from gogi.llm_message import LLMessage, LLMMessageGroup
-from gogi.llm_model_config import LLMModelConfig
-
+from src.gogi import GoGi
 
 if __name__ == '__main__':
 
