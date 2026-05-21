@@ -19,3 +19,26 @@ conda activate gogi-python-3.12
 pip install uv
 ```
 
+Fetch the protos
+
+```
+git submodule update --init --recursive
+```
+
+Build the protos
+
+```commandline
+uv run python scripts/build_protos.py
+```
+
+Build the package
+
+```commandline
+uv build
+```
+
+Install locally
+
+```commandline
+uv pip install dist/*.whl
+```

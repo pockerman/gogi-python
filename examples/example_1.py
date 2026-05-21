@@ -3,13 +3,11 @@
 
 
 from rich import print as rich_print
-from src.gogi import GoGi
+from gogi.gogi import GoGi
 
 if __name__ == '__main__':
 
     platform = GoGi(gateway_url="localhost:50051")
 
-
-
-
+    response = platform.documents.list_documents(index_name="my-first-doc-index")
     rich_print(response)
