@@ -1,0 +1,14 @@
+[project]
+name = "gogi-python"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "grpcio>=1.80.0",
+    "protobuf>=5.26,<6",
+    "grpcio-tools==1.71.0",
+    "pydantic>=2.13.4",
+]
+[tool.uv.extra-build-dependencies]
+grpcio-tools = ["pkg_resources"]
