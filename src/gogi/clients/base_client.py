@@ -9,11 +9,11 @@ def _use_insecure_channel(gateway_url: str) -> bool:
 
     Plaintext is used when:
     - the URL points at the local loopback (``localhost``, ``127.0.0.1``), or
-    - the env var ``GENAI_GATEWAY_INSECURE=1`` is set — this is how
+    - the env var ``GOGI_GATEWAY_INSECURE=1`` is set — this is how
       compose-network services and locally-launched workflow containers
       opt out of TLS, since the in-cluster gateway is plain gRPC.
 
-    Production deployments leave ``GENAI_GATEWAY_INSECURE`` unset and use
+    Production deployments leave ``GOGI_GATEWAY_INSECURE`` unset and use
     a public hostname, so the secure-channel path is the default.
     """
     if gateway_url.startswith(("localhost", "127.0.0.1")):
