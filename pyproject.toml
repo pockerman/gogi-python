@@ -9,6 +9,7 @@ dependencies = [
     "protobuf>=5.26,<6",
     "grpcio-tools==1.71.0",
     "pydantic>=2.13.4",
+    "loguru>=0.7.3",
 ]
 [tool.setuptools]
 package-dir = {"" = "src"}

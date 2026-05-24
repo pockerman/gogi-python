@@ -22,7 +22,7 @@ pip install uv
 Fetch the protos
 
 ```
-git submodule update --init --recursive
+git submodule update --remote --recursive
 ```
 
 Build the protos

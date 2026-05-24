@@ -23,9 +23,10 @@ def _use_insecure_channel(gateway_url: str) -> bool:
 
 class BaseClient:
 
-    def __init__(self, platform, service_name: str):
+    def __init__(self, platform, service_name: str, logger=None):
         self.platform = platform
         self.service_name = service_name
+        self.logger = logger
 
         if _use_insecure_channel(platform.gateway_url):
             raw_channel = grpc.insecure_channel(platform.gateway_url)
