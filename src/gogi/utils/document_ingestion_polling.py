@@ -8,10 +8,12 @@ def wait_for_document_ingest(platform, job_id: str, poll_interval: int = 5, time
     
     start = time.time()
     while time.time() - start < timeout:
-        job = platform.documents.get_document_ingest_status(job_id)
-        if job.status == JobStatus.COMPLETED:
+        job = platform.documents.get_document_ingest_job(job_id)
+
+        print(f"Job status is {job.status}")
+        if job.status == JobStatus.JobCompleted:
             return job
-        if job.status == JobStatus.FAILED:
+        if job.status == JobStatus.JobFailed:
             raise RuntimeError(f"Ingestion failed: {job.error}")
         time.sleep(poll_interval)
     raise TimeoutError("Ingestion timed out")

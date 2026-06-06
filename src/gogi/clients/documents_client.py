@@ -2,7 +2,7 @@ from typing import List, Optional
 from pathlib import Path
 
 from gogi.clients.models.document_metadata import DocumentMetadata
-from gogi.clients.models.ingest_document_job import IngestDocumentJob
+from gogi.clients.models.ingest_document import IngestDocumentJob, IngestDocumentRequest
 from gogi.clients.base_client import BaseClient
 from gogi.v1.data import document_service_pb2
 from gogi.v1.data import document_service_pb2_grpc
@@ -62,8 +62,7 @@ class DocumentsClient(BaseClient):
         resp = self._stub.DeleteDocument(request, metadata=self.route_metadata)
         return resp.response
     
-    def ingest_document(self, index_name: str, document_id: str, filename: str,
-                        content: bytes, metadata: Optional[dict] = None) -> IngestDocumentJob:
+    def ingest_document(self,request: IngestDocumentRequest) -> IngestDocumentJob:
         """
         Ingest a document into the Gogi platform. 
         This will create a new document associated with the specified index, 
@@ -78,15 +77,23 @@ class DocumentsClient(BaseClient):
         This includes information about the job status, progress, and any errors that may have occurred."""
         
         if self.logger:
-            self.logger.debug(f"Ingesting document: {document_id} from index: {index_name}")
+            self.logger.debug(f"Ingesting document: {request.document_id} from index: {request.index_name}")
 
 
-
-        request = document_service_pb2.IngestDocumentRequest(index_name=index_name, document_id=document_id)
-        resp = self._stub.IngestDocument(request, metadata=self.route_metadata)
+        proto_request = document_service_pb2.IngestDocumentRequest(index_name=request.index_name, 
+                                                             document_id=request.document_id,
+                                                             filename=request.filename, 
+                                                             content=request.content,
+                                                             content_type=request.content_type,
+                                                             metadata=request.metadata,
+                                                             embeddings_client=request.embeddings_client,
+                                                             batch_size=request.batch_size,
+                                                             embeddings_model=request.embeddings_model,
+                                                             chunk_strategy=request.chunk_strategy)
+        resp = self._stub.IngestDocument(proto_request, metadata=self.route_metadata)
         return self.proto_to_ingest_job(resp)
     
-    def get_document_ingest_status(self, job_id: str) -> IngestDocumentJob:
+    def get_document_ingest_job(self, job_id: str) -> IngestDocumentJob:
         """
         Get the status of a document ingest job.
         Args:
@@ -98,6 +105,8 @@ class DocumentsClient(BaseClient):
         if self.logger:
             self.logger.debug(f"Getting document ingest status for job: {job_id}")
 
-        request = document_service_pb2.GetDocumentIngestStatusRequest(job_id=job_id)
-        resp = self._stub.GetDocumentIngestStatus(request, metadata=self.route_metadata)
+        request = document_service_pb2.GetIngestDocumentJobRequest(job_id=job_id)
+        resp = self._stub.GetDocumentIngestJob(request, metadata=self.route_metadata)
+
+        
         return self.proto_to_ingest_job(resp)

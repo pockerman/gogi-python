@@ -7,9 +7,11 @@ from loguru import logger
 import tempfile
 from pathlib import Path
 from rich import print as rich_print
+import uuid
 
 from gogi.gogi import Gogi
 from gogi.clients.models.index_config import IndexConfig
+from gogi.clients.models.ingest_document import IngestDocumentRequest
 from gogi.utils.document_ingestion_polling import wait_for_document_ingest
 
 def create_temp_document(filename: str) -> bytes:
@@ -95,14 +97,25 @@ if __name__ == '__main__':
 
     doc_content = create_temp_document("my_first_doc.txt")
 
+    # TODO: Right now we assume that document_id is UUID
+    # This need not be the case
+    ingest_request = IngestDocumentRequest(content=doc_content, content_type="UNKNOWN",
+                                           index_name=index_config.name, 
+                                           document_id=uuid.uuid4().hex,
+                                           filename="my_first_doc.txt",
+                                           embeddings_model="clip",
+                                           embeddings_client="sentence-transformer",
+                                           chunk_strategy="fixed",
+                                           metadata={"format": "txt", "author": "John Doe", "source": "generated"})
     # ingest a document into the index. 
     # This will kick off an asynchronous job to process the document (e.g., chunking, embedding, etc.), 
     # so the response will contain information about the job status rather than the document itself.
-    response = platform.documents.ingest_document(index_name=index_config.name, 
-                                                 document_id="my-first-doc",
-                                                 filename="my_first_doc.txt",
-                                                 content=doc_content,
-                                                 metadata={"format": "txt", "author": "John Doe", "source": "generated"})
+    response = platform.documents.ingest_document(ingest_request)
+
+    # Find out the job
+    job = platform.documents.get_document_ingest_job(response.job_id)
+
+    rich_print(f"Job status is {job.status}")
     
     # we need to wait for the ingest job to complete 
     # before we can query the document or see it in the list of documents for the index.
@@ -114,17 +127,17 @@ if __name__ == '__main__':
 
 
 
-    response = platform.documents.get_document(index_name=response[0].index_name, 
-                                               document_id=response[0].document_id)
-    rich_print(f"Get document response: {response}")
+    # response = platform.documents.get_document(index_name=response[0].index_name, 
+    #                                            document_id=response[0].document_id)
+    # rich_print(f"Get document response: {response}")
 
-    # delete a document
-    response = platform.documents.delete_document(index_name=response.index_name, 
-                                                  document_id=response.document_id)
-    rich_print(f"Delete document response: {response}") 
+    # # delete a document
+    # response = platform.documents.delete_document(index_name=response.index_name, 
+    #                                               document_id=response.document_id)
+    # rich_print(f"Delete document response: {response}") 
 
 
-    # finally, delete the index we created. 
-    # This will also delete all documents contained within the index, so use with caution!
-    response = platform.indexes.delete_index(index_name=index_config.name)
-    rich_print(f"Delete index response: {response}")
+    # # finally, delete the index we created. 
+    # # This will also delete all documents contained within the index, so use with caution!
+    # response = platform.indexes.delete_index(index_name=index_config.name)
+    # rich_print(f"Delete index response: {response}")
