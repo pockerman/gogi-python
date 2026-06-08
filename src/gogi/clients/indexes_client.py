@@ -3,7 +3,7 @@ from loguru import logger
 
 
 from gogi.clients.models.index_config import IndexConfig
-from gogi.clients.models.index import Index
+from gogi.clients.models.gogi_index import GogiIndex
 from gogi.clients.base_client import BaseClient
 from gogi.v1.data import index_service_pb2
 from gogi.v1.data import index_service_pb2_grpc
@@ -14,72 +14,71 @@ class IndexesClient(BaseClient):
 
 
     @staticmethod
-    def proto_to_index_config(proto_config: index_service_pb2.IndexConfig) -> IndexConfig:
-        return IndexConfig(
-            name=proto_config.name,
-            embedding_model=proto_config.embedding_model,
-            embedding_dimensions=proto_config.embedding_dimensions,
-            chunking_strategy=proto_config.chunking_strategy,
-            chunk_size=proto_config.chunk_size,
-            chunk_overlap=proto_config.chunk_overlap,
-            metadata_schema=dict(proto_config.metadata_schema)
-        )
+    def proto_to_index(resp) -> GogiIndex:
 
-    @staticmethod
-    def proto_to_index(resp) -> Index:
-        return Index(
-            name=resp.name,
-            config=IndexesClient.proto_to_index_config(resp.config),
+
+        print(resp)
+
+        return GogiIndex(
+            index_id=resp.id,
+            index_name=resp.index_name,
             owner=resp.owner,
-            document_count=resp.document_count,
-            total_chunks=resp.total_chunks,
             created_at=resp.created_at,
-            last_ingested_at=resp.last_ingested_at
+            last_updated_at=resp.last_updated_at
         )
-
 
 
     def __init__(self, platform, logger=None):
         super().__init__(platform=platform, service_name="indexes", logger=logger)
         self._stub = index_service_pb2_grpc.IndexServiceStub(self._channel)
 
-    def create_index(self, owner_name: str, config: IndexConfig) -> Index:
+    def create_index(self, index_name: str, owner_name: str) -> GogiIndex:
 
         if self.logger:
-            self.logger.debug(f"Creating index with config: {config}")
-
-
-        index_config_proto = index_service_pb2.IndexConfig(
-            name=config.name,
-            embedding_model=config.embedding_model,
-            embedding_dimensions=config.embedding_dimensions,
-            chunking_strategy=config.chunking_strategy,
-            chunk_size=config.chunk_size,
-            chunk_overlap=config.chunk_overlap,
-            metadata_schema=config.metadata_schema
-        )
+            self.logger.debug(f"Creating index {index_name} with name: {owner_name}")
 
         request = index_service_pb2.CreateIndexRequest(owner=owner_name, 
-                                                       config=index_config_proto)
+                                                       index_name=index_name)
         resp = self._stub.CreateIndex(request, metadata=self.route_metadata)
         return self.proto_to_index(resp)
 
 
-    def list_indexes(self, owner_name: str) -> List[Index]:
+    def list_owner_indexes(self, owner_name: str) -> List[GogiIndex]:
         if self.logger:
             self.logger.debug(f"Listing indexes for owner: {owner_name}")
 
-        request = index_service_pb2.ListIndexesRequest()
+        request = index_service_pb2.ListIndexesRequest(owner_name=owner_name)
         resp = self._stub.ListIndexes(request, metadata=self.route_metadata)
         return [self.proto_to_index(index) for index in resp.indexes]
-
-    def get_index(self, index_name: str) -> Index:
+    
+    def get_index_by_name(self, index_name: str) -> GogiIndex:
         if self.logger:
-            self.logger.debug(f"Getting index: {index_name}")
-            
-        request = index_service_pb2.GetIndexRequest(index_name=index_name)
-        resp = self._stub.GetIndex(request, metadata=self.route_metadata)
+            self.logger.debug(
+                f"Getting index (name={index_name})",)
+
+        request = index_service_pb2.GetIndexByNameRequest(index_name=index_name)
+        resp = self._stub.GetIndexByName(request, metadata=self.route_metadata)
         return self.proto_to_index(resp)
+    
+    def get_index_by_id(self, index_id: str) -> GogiIndex:
+        if self.logger:
+            self.logger.debug(
+            f"Getting index (id={index_id})")
+        request = index_service_pb2.GetIndexByIdRequest(index_id=index_id)
+        resp = self._stub.GetIndexById(request, metadata=self.route_metadata)
+        return self.proto_to_index(resp)
+
+
+    def get_index(self, *, index_name: str | None = None, index_id: str | None = None) -> GogiIndex:
+
+        if (index_id is None) == (index_name is None):
+            raise ValueError("Specify exactly one of index_id or index_name")
+
+        if index_name:
+            return self.get_index_by_name(index_name=index_name)
+        
+        return self.get_index_by_id(index_id=index_id)
+
 
     def delete_index(self, index_name: str) -> bool:
         if self.logger:
