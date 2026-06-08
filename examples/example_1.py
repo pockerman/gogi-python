@@ -31,7 +31,7 @@ if __name__ == '__main__':
 
 
     # list indexes for a user
-    response = platform.indexes.list_indexes(owner_name="alex-corp")
+    response = platform.indexes.list_owner_indexes(owner_name="alex-corp")
     rich_print(f"List indexes response: {response}")
 
     
