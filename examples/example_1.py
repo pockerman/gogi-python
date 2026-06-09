@@ -31,23 +31,32 @@ if __name__ == '__main__':
 
 
     # list indexes for a user
-    response = platform.indexes.list_owner_indexes(owner_name="alex-corp")
-    rich_print(f"List indexes response: {response}")
+    list_response = platform.indexes.list_owner_indexes(owner_name="alex-corp")
+    rich_print(f"List indexes response: {list_response}")
 
-    
-    
     # create the index
-    response = platform.indexes.create_index(owner_name="alex-corp", index_name="my-index-2")
-    rich_print(f"Create index response: {response}")
+    create_response = platform.indexes.create_index(owner_name="alex-corp", index_name="my-index-2")
+    rich_print(f"Create index response: {create_response}")
 
     # We can access an index either by name or id
     # get the index we just created
-    response = platform.indexes.get_index(index_name=response.index_name)
-    rich_print(f"Get index response: {response}")
+    get_response = platform.indexes.get_index(index_name=create_response.index_name)
+    rich_print(f"Get index response by name: {get_response}")
 
-    response = platform.indexes.get_index(index_id=response.index_id)
-    rich_print(f"Get index response: {response}")
+    get_response = platform.indexes.get_index(index_id=get_response.index_id)
+    rich_print(f"Get index response by id: {get_response}")
 
+    # Similarly, indexes can be deleted by Id or name
+    delete_response = platform.indexes.delete_index_by_id(get_response.index_id)
+    rich_print(f"Delete index response by id: {delete_response}")
+
+    # we have already deleted the index so this should be false
+    delete_response = platform.indexes.delete_index_by_name(get_response.index_name)
+    rich_print(f"Delete index response by name: {delete_response}")
+    
+    # delete all the owners indexes
+    delete_response = platform.indexes.delete_owner_indexes(owner="alex-corp")
+    rich_print(f"Delete index response by owner name: {delete_response}")
 
 
 

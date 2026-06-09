@@ -80,9 +80,33 @@ class IndexesClient(BaseClient):
         return self.get_index_by_id(index_id=index_id)
 
 
-    def delete_index(self, index_name: str) -> bool:
+    def delete_index_by_name(self, index_name: str) -> bool:
         if self.logger:
             self.logger.debug(f"Deleting index: {index_name}")
-        request = index_service_pb2.DeleteIndexRequest(index_name=index_name)
-        resp = self._stub.DeleteIndex(request, metadata=self.route_metadata)
+        request = index_service_pb2.DeleteIndexByNameRequest(index_name=index_name)
+        resp = self._stub.DeleteIndexByName(request, metadata=self.route_metadata)
+        return resp.success
+    
+    def delete_index_by_id(self, index_id: str) -> bool:
+        if self.logger:
+            self.logger.debug(f"Deleting index: {index_id}")
+        request = index_service_pb2.DeleteIndexByIdRequest(index_id=index_id)
+        resp = self._stub.DeleteIndexById(request, metadata=self.route_metadata)
+        return resp.success
+    
+    def delete_index(self, *, index_name: str | None, index_id: str | None = None) -> bool:
+        if (index_id is None) == (index_name is None):
+            raise ValueError("Specify exactly one of index_id or index_name")
+        
+        if index_name:
+            return self.delete_index_by_name(index_name=index_name)
+        
+        return self.delete_index_by_id(index_id=index_id)
+
+    
+    def delete_owner_indexes(self, owner: str) -> bool:
+        if self.logger:
+            self.logger.debug(f"Deleting index: {owner}")
+        request = index_service_pb2.DeleteOwnerIndexesRequest(owner_name=owner)
+        resp = self._stub.DeleteOwnerIndexes(request, metadata=self.route_metadata)
         return resp.success
