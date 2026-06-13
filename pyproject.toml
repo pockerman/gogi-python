@@ -10,9 +10,14 @@ dependencies = [
     "grpcio-tools==1.71.0",
     "pydantic>=2.13.4",
     "loguru>=0.7.3",
+    "pytest>=9.0.3",
 ]
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.uv.extra-build-dependencies]
 grpcio-tools = ["pkg_resources"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
