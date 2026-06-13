@@ -2,6 +2,7 @@ import os
 from typing import Optional
 from gogi.clients.documents_client import DocumentsClient
 from gogi.clients.indexes_client import IndexesClient
+from gogi.clients.llm_models_client import LLMModelsClient
 
 class Gogi:
     """
@@ -29,6 +30,7 @@ class Gogi:
         self._models = None
         self._indexes: Optional[IndexesClient] = None
         self._documents: Optional[DocumentsClient] = None
+        self._llm_models: Optional[LLMModelsClient] = None
         self._guardrails = None
         self._tools = None
         self._evaluation = None
@@ -45,3 +47,10 @@ class Gogi:
         if not self._indexes:
             self._indexes = IndexesClient(platform=self, logger=self.logger)
         return self._indexes
+    
+    @property
+    def llm_clients(self) -> LLMModelsClient:
+        if not self._llm_models:
+            self._llm_models = LLMModelsClient(platform=self, logger=self.logger)
+        return self._llm_models
+    
