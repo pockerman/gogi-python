@@ -18,6 +18,9 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
 
+      - name: Install depeendencies
+        run: uv sync --extra dev
+
       - name: Install package
         run: uv pip install -e ".[dev]"
 
