@@ -1,16 +1,18 @@
 import pytest
 
 from gogi.clients.llm_models_client import LLMModelsClient
-from gogi.clients import LLMRequest, LLMModelConfig 
+from gogi.clients import LLMRequest, LLMRunRequestConfig 
 
 
 @pytest.fixture
 def llm_request():
     return LLMRequest(
         messages=[],
-        config=LLMModelConfig(
+        config=LLMRunRequestConfig(
             provider="anthropic",
             model="claude-3-5-sonnet",
+            temperature=0.0,
+            top_p=1.0
         ),
     )
 
