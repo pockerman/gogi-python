@@ -1,11 +1,13 @@
 
-from typing import Optional, List 
+from typing import Optional, List, Any 
 from gogi.clients.base_client import BaseClient
 from gogi.clients.models.llm_response import LLMResponse
 from gogi.clients.models.llm_request import LLMRequest
 from gogi.clients.models.llm_message import LLMessage
-from gogi.clients.models.llm_tool_definition import LLMToolDefinition
+from gogi.clients.models.llm_tool_definition import LLMToolCall, LLMToolDefinition, ToolCallFunction
 from gogi.clients.models.llm_run_request_config import LLMRunRequestConfig
+from gogi.clients.models.llm_token_usage import LLMTokenUsage
+from gogi.clients.models.llm_provider import LLMProvider
 from gogi.v1 import llm_model_service_pb2, llm_model_service_pb2_grpc
 
 
@@ -40,7 +42,7 @@ class LLMModelsClient(BaseClient):
     
     @staticmethod
     def request_tools_to_grpcs_tools(tools: List[LLMToolDefinition]) -> List[llm_model_service_pb2.ToolDefinition]:
-        return [llm_model_service_pb2.ToolDefinition(type=tool.tool_type, function=tool.function) for tool in tools]
+        return [llm_model_service_pb2.ToolDefinition(type=tool.tool_type, function=tool.function) for tool in tools] if tools else []
     
     @staticmethod
     def build_grpc_request(req: LLMRequest) -> llm_model_service_pb2.LLMRunRequest:
@@ -52,17 +54,35 @@ class LLMModelsClient(BaseClient):
 
         return llm_model_service_pb2.LLMRunRequest(messages=messages, config=config,
                                                    tools=tools, response_format=response_format)
+    
+    @staticmethod
+    def grpc_token_usage_to_token_usage(grpc_usage: Optional[Any]) -> LLMTokenUsage:
+
+        if not grpc_usage:
+            return LLMTokenUsage()
+        
+        return LLMTokenUsage(prompt_tokens=grpc_usage.prompt_tokens, 
+                             completion_tokens=grpc_usage.completion_tokens,
+                             total_tokens=grpc_usage.total_tokens)
+    
+    @staticmethod
+    def grpc_tool_calls_to_tool_call(grpc_tool_calls: list[Any]) -> List[LLMToolCall]:
+        if not grpc_tool_calls:
+            return []
+        return [LLMToolCall(idx=tool.id, tool_type=tool.type, 
+                            function=ToolCallFunction(name=tool.function.name, arguments=tool.function.arguments)) for tool in grpc_tool_calls]
+
 
 
     def __init__(self, platform, logger=None):
-        super().__init__(platform=platform, service_name="indexes", logger=logger)
+        super().__init__(platform=platform, service_name="llms", logger=logger)
         self._stub = llm_model_service_pb2_grpc.LLMModelServerStub(self._channel)
         self._providers_to_model_cache: Optional[dict[str, list[str]]] = None
 
     @property
     def providers(self) -> list[str]:
         if not self._providers_to_model_cache:
-            pass 
+            self.get_llm_providers()
 
         return list(self._providers_to_model_cache.keys())
     
@@ -83,9 +103,18 @@ class LLMModelsClient(BaseClient):
         return LLMResponse(content=response.content, model=response.model,
                            provider=response.provider,
                            finish_reason=response.finish_reason,
-                           token_usage=response.usage, tool_calls=response.tool_calls
+                           token_usage=self.grpc_token_usage_to_token_usage(response.usage), 
+                           tool_calls=self.grpc_tool_calls_to_tool_call(response.tool_calls)
                            )
+    
+    def get_llm_providers(self) -> List[LLMProvider]:
+        response = self._stub.GetLLMProviders(llm_model_service_pb2.GetLLMProvidersRequest(fetch_models=True))
+        providers = [LLMProvider(name=provider.name, models=provider.models) for provider in response.providers]
 
+        self._providers_to_model_cache = {}
+        for p in providers:
+            self._providers_to_model_cache[p.name] = p.models
+        return providers
         
 
  

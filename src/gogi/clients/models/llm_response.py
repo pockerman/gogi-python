@@ -8,6 +8,6 @@ class LLMResponse(BaseModel):
     content: str 
     model: str 
     provider: str 
-    finish_reason: str
-    token_usage: LLMTokenUsage
+    finish_reason: Optional[str] = None
+    token_usage: Optional[LLMTokenUsage] = None
     tool_calls: Optional[List[LLMToolCall]] = None
