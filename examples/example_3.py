@@ -12,35 +12,68 @@ from loguru import logger
 from rich import print as rich_print
 
 from gogi.gogi import Gogi
-from gogi.clients import LLMRequest, LLMRunRequestConfig, LLMessage
+from gogi.clients import (LLMRequest, 
+                          LLMRunRequestConfig, 
+                          LLMessage, LLMRegisterRequest, 
+                          LLMModelInfo, LLMCapabilities)
 
 
 
 
 if __name__ == '__main__':
 
+    # from gogi.v1.llm_model_service_pb2 import RegisterLLMResponse
+
+    # print(RegisterLLMResponse.DESCRIPTOR.fields)
+
+    # for field in RegisterLLMResponse.DESCRIPTOR.fields:
+    #     print(field.name, field.type)
+
+    # from gogi.v1 import llm_model_service_pb2 as pb
+
+    # field = pb.RegisterLLMResponse.DESCRIPTOR.fields_by_name["registered_at"]
+
+    # print(field.type)
+    # print(field.message_type)
+
     # connect to the Gogi platform. 
     # This will be the first step in any interaction with the platform, and will 
     # give you access to all of the available clients (indexes, documents, and queries).
     platform = Gogi(gateway_url="localhost:50051", logger=logger)
 
-    # get the providers the platform supports
+    # # get the providers the platform supports
     providers = platform.llm_clients.providers
-
     rich_print(f"Platform providers {providers}")
 
-    # check the models that a provider supports
+    # # check the models that a provider supports
     provider_models = platform.llm_clients.provider_models(provider="anthropic")
     rich_print(f"Platform providers models {provider_models}")
 
-    # asking for model request
+    # # asking for model request
     model_config = LLMRunRequestConfig(model="claude-sonnet-4.5", provider="anthropic", temperature=0.0, max_tokens=500)
     messages = [LLMessage(role="user", content="Who was Alexandr the Great?")]
     llm_run_request = LLMRequest(config=model_config, messages=messages)
 
-    # run a blocking request
+    # # run a blocking request
     model_response = platform.llm_clients.run(llm_run_request)
     rich_print(f"Model response {model_response}")
+
+    # # we can also stream the model response
+
+
+    # # We can add a new model
+    new_model_registration = LLMRegisterRequest(info=LLMModelInfo(name="my-model", provider="ollama",
+                                                                  capabilities=LLMCapabilities(context_window=5000,
+                                                                                               supports_json_mode=False,
+                                                                                               supports_streaming=False,
+                                                                                               supports_tools=True,
+                                                                                               supports_vision=False)),
+                                                endpoint="http://localhost:5000",
+                                                health_check="http://localhost:5000/health",
+                                                adapter_type=""
+                                            )
+    registration_response = platform.llm_clients.add_model(new_model_registration)
+    rich_print(f"Model registration response {registration_response}")
 
 
 

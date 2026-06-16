@@ -1,13 +1,14 @@
 
 from typing import Optional, List, Any 
 from gogi.clients.base_client import BaseClient
-from gogi.clients.models.llm_response import LLMResponse
-from gogi.clients.models.llm_request import LLMRequest
-from gogi.clients.models.llm_message import LLMessage
-from gogi.clients.models.llm_tool_definition import LLMToolCall, LLMToolDefinition, ToolCallFunction
-from gogi.clients.models.llm_run_request_config import LLMRunRequestConfig
-from gogi.clients.models.llm_token_usage import LLMTokenUsage
-from gogi.clients.models.llm_provider import LLMProvider
+from gogi.clients.models.llm.llm_register_request import LLMRegisterRequest, LLMRegisterResponse
+from gogi.clients.models.llm.llm_response import LLMResponse
+from gogi.clients.models.llm.llm_request import LLMRequest
+from gogi.clients.models.llm.llm_message import LLMessage
+from gogi.clients.models.llm.llm_tool_definition import LLMToolCall, LLMToolDefinition, ToolCallFunction
+from gogi.clients.models.llm.llm_run_request_config import LLMRunRequestConfig
+from gogi.clients.models.llm.llm_token_usage import LLMTokenUsage
+from gogi.clients.models.llm.llm_provider import LLMProvider
 from gogi.v1 import llm_model_service_pb2, llm_model_service_pb2_grpc
 
 
@@ -54,6 +55,24 @@ class LLMModelsClient(BaseClient):
 
         return llm_model_service_pb2.LLMRunRequest(messages=messages, config=config,
                                                    tools=tools, response_format=response_format)
+    
+    @staticmethod
+    def build_grpc_capabilities(request: LLMRegisterRequest) -> llm_model_service_pb2.LLMCapabilities:
+        return  llm_model_service_pb2.LLMCapabilities(context_window=request.info.capabilities.context_window,
+                                                      supports_vision=request.info.capabilities.supports_vision,
+                                                      supports_tools=request.info.capabilities.supports_tools,
+                                                      supports_streaming=request.info.capabilities.supports_streaming,
+                                                      supports_json_mode=request.info.capabilities.supports_json_mode)
+    
+    @staticmethod
+    def build_grpc_registration_request(request: LLMRegisterRequest) -> llm_model_service_pb2.RegisterLLMRequest:
+        return llm_model_service_pb2.RegisterLLMRequest(info=llm_model_service_pb2.ModelInfo(name=request.info.name,
+                                                                                             provider=request.info.provider,
+                                                                                             capabilities=LLMModelsClient.build_grpc_capabilities(request)),
+                                                        endpoint=request.endpoint,
+                                                        health_check=request.health_check,
+                                                        adapter_type=request.adapter_type
+                                                        )
     
     @staticmethod
     def grpc_token_usage_to_token_usage(grpc_usage: Optional[Any]) -> LLMTokenUsage:
@@ -115,6 +134,16 @@ class LLMModelsClient(BaseClient):
         for p in providers:
             self._providers_to_model_cache[p.name] = p.models
         return providers
+    
+    def add_model(self, request: LLMRegisterRequest) -> LLMRegisterResponse:
+
+        grpc_request = self.build_grpc_registration_request(request)
+        grpc_response = self._stub.RegisterLLM(grpc_request)
+
+        return LLMRegisterResponse(name=grpc_response.name, 
+                                   status=grpc_response.status, 
+                                   registered_at=grpc_response.registered_at)
+
         
 
  
