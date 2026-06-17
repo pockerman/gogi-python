@@ -4,7 +4,7 @@ from typing import List, Optional
 from gogi.clients.models.llm.llm_token_usage import LLMTokenUsage
 from gogi.clients.models.llm.llm_tool_definition import LLMToolCall
 
-class LLMResponse(BaseModel):
+class LLMRunResponse(BaseModel):
     content: str 
     model: str 
     provider: str 
