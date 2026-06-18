@@ -2,11 +2,13 @@
 from typing import Optional, List, Any 
 
 from gogi.clients.models.llm.llm_capabilities import LLMCapabilities
+from gogi.clients.models.llm.requests.list_llms_request import ListLLMsRequest
 from gogi.clients.models.llm.requests.llm_capabilities_request import GetLLMCapabilitiesRequest
 from gogi.clients.models.llm.requests.llm_register_request import LLMRegisterRequest
 from gogi.clients.models.llm.requests.llm_request_status import GetLLMStatusRequest
 from gogi.clients.models.llm.requests.llm_run_request import LLMRunRequest
 from gogi.clients.models.llm.requests.list_registered_llm_request import ListRegisteredLLMsRequest
+from gogi.clients.models.llm.responses.list_llms_response import ListLLMsResponse
 from gogi.clients.models.llm.responses.llm_capabilities_response import LLMCapabilitiesResponse
 from gogi.clients.models.llm.responses.llm_run_response import LLMRunResponse
 from gogi.clients.models.llm.responses.llm_register_response import LLMRegisterResponse
@@ -148,6 +150,17 @@ class LLMModelsClientGRPCHelper:
     @staticmethod
     def serialze_get_llm_capabilities_grpc_response(grpc_response: llm_model_service_pb2.LLMCapabilitiesResponse) -> LLMCapabilitiesResponse:
         return LLMCapabilitiesResponse(capabilities=LLMModelsClientGRPCHelper.serialize_grpc_llm_capabilities(grpc_response.capabilities))
+    
+    @staticmethod
+    def list_llms_request_to_grpc(request: ListLLMsRequest) -> llm_model_service_pb2.ListLLMsRequest:
+        return llm_model_service_pb2.ListLLMsRequest()
+    
+    
+    @staticmethod
+    def serialze_list_llms_grpc_response(grpc_response: llm_model_service_pb2.ListLLMsResponse) -> ListLLMsResponse:
+        return ListLLMsResponse(models=[LLMModelInfo(name=model.name, provider=model.provider,
+                                              capabilities=LLMModelsClientGRPCHelper.serialize_grpc_llm_capabilities(model.capabilities)) 
+                                              for model in grpc_response.models])
         
     
     def __init__(self):

@@ -1,11 +1,13 @@
 
 from typing import Optional, List, Any 
 from gogi.clients.base_client import BaseClient
+from gogi.clients.models.llm.requests.list_llms_request import ListLLMsRequest
 from gogi.clients.models.llm.requests.llm_capabilities_request import GetLLMCapabilitiesRequest
 from gogi.clients.models.llm.requests.llm_register_request import LLMRegisterRequest
 from gogi.clients.models.llm.requests.llm_request_status import GetLLMStatusRequest
 from gogi.clients.models.llm.requests.llm_run_request import LLMRunRequest
 from gogi.clients.models.llm.requests.list_registered_llm_request import ListRegisteredLLMsRequest
+from gogi.clients.models.llm.responses.list_llms_response import ListLLMsResponse
 from gogi.clients.models.llm.responses.llm_capabilities_response import LLMCapabilitiesResponse
 from gogi.clients.models.llm.responses.llm_run_response import LLMRunResponse
 from gogi.clients.models.llm.responses.llm_register_response import LLMRegisterResponse
@@ -60,6 +62,11 @@ class LLMModelsClient(BaseClient):
                            tool_calls=self._grpc_helper.grpc_tool_calls_to_tool_call(response.tool_calls)
                            )
     
+    def list_llms(self, request: ListLLMsRequest) -> ListLLMsResponse:
+        grpc_request = self._grpc_helper.list_llms_request_to_grpc(request)
+        grpc_response = self._stub.ListLLMs(grpc_request)
+        return self._grpc_helper.serialze_list_llms_grpc_response(grpc_response)
+
     def get_llm_capabilities(self, request: GetLLMCapabilitiesRequest) -> LLMCapabilitiesResponse:
         grpc_request = self._grpc_helper.get_llm_capabilities_to_grpc(request)
         grpc_response = self._stub.GetLLMCapabilities(grpc_request)

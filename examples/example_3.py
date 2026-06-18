@@ -11,6 +11,7 @@ The client allows users to
 from loguru import logger
 
 
+from gogi.clients.models.llm.requests.list_llms_request import ListLLMsRequest
 from gogi.clients.models.llm.requests.llm_capabilities_request import GetLLMCapabilitiesRequest
 from rich import print as rich_print
 
@@ -77,6 +78,9 @@ if __name__ == '__main__':
     # get the capabilities of a model
     query_response = platform.llm_clients.get_llm_capabilities(GetLLMCapabilitiesRequest(model="my-model"))
     rich_print(f"LLM capabilties response {query_response}")
+
+    query_response = platform.llm_clients.list_llms(ListLLMsRequest())
+    rich_print(f"List LLMs response {query_response}")
 
 
 
