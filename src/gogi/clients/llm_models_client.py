@@ -1,5 +1,7 @@
 
-from typing import Optional, List, Any 
+from typing import Optional, List, Iterator
+import grpc 
+
 from gogi.clients.base_client import BaseClient
 from gogi.clients.models.llm.requests.list_llms_request import ListLLMsRequest
 from gogi.clients.models.llm.requests.llm_capabilities_request import GetLLMCapabilitiesRequest
@@ -12,6 +14,7 @@ from gogi.clients.models.llm.responses.llm_capabilities_response import LLMCapab
 from gogi.clients.models.llm.responses.llm_run_response import LLMRunResponse
 from gogi.clients.models.llm.responses.llm_register_response import LLMRegisterResponse
 from gogi.clients.models.llm.responses.list_registered_llms_response import ListRegisteredLLMsResponse
+from gogi.clients.models.llm.responses.llm_run_stream_chunk import LLMRunStreamChunk
 
 from gogi.clients.models.llm.llm_message import LLMessage
 from gogi.clients.models.llm.llm_tool_definition import LLMToolCall, LLMToolDefinition, ToolCallFunction
@@ -62,19 +65,50 @@ class LLMModelsClient(BaseClient):
                            tool_calls=self._grpc_helper.grpc_tool_calls_to_tool_call(response.tool_calls)
                            )
     
+    def run_stream(self, request: LLMRunRequest) -> Iterator[LLMRunStreamChunk]:
+        grpc_request = self._grpc_helper.build_grpc_request(request)
+
+        try:
+            for chunk in self._stub.RunStream(grpc_request, metadata=self.route_metadata):
+                    usage = None
+                    if chunk.HasField("usage"):
+                        usage = LLMTokenUsage(
+                            prompt_tokens=chunk.usage.prompt_tokens,
+                            completion_tokens=chunk.usage.completion_tokens,
+                            total_tokens=chunk.usage.total_tokens,
+                        )
+                    yield LLMRunStreamChunk(
+                        token=chunk.token,
+                        model=chunk.model,
+                        finish_reason=chunk.finish_reason
+                        if chunk.HasField("finish_reason")
+                        else None,
+                        usage=usage,
+                    )
+            return  # stream completed successfully
+        except grpc.RpcError as e:
+            last_error = e
+            if self._should_fail_fast(e, fallback_config):
+                raise
+            if self.logger:
+                self.logger.warning("chat_stream failed for model %s: %s", try_model, e)
+            pass 
+        raise last_error
+    
     def list_llms(self, request: ListLLMsRequest) -> ListLLMsResponse:
         grpc_request = self._grpc_helper.list_llms_request_to_grpc(request)
-        grpc_response = self._stub.ListLLMs(grpc_request)
+        grpc_response = self._stub.ListLLMs(grpc_request, metadata=self.route_metadata)
         return self._grpc_helper.serialze_list_llms_grpc_response(grpc_response)
 
     def get_llm_capabilities(self, request: GetLLMCapabilitiesRequest) -> LLMCapabilitiesResponse:
         grpc_request = self._grpc_helper.get_llm_capabilities_to_grpc(request)
-        grpc_response = self._stub.GetLLMCapabilities(grpc_request)
+        grpc_response = self._stub.GetLLMCapabilities(grpc_request, metadata=self.route_metadata)
         return self._grpc_helper.serialze_get_llm_capabilities_grpc_response(grpc_response)
 
     
     def get_llm_providers(self) -> List[LLMProvider]:
-        response = self._stub.GetLLMProviders(llm_model_service_pb2.GetLLMProvidersRequest(fetch_models=True))
+        response = self._stub.GetLLMProviders(llm_model_service_pb2.GetLLMProvidersRequest(fetch_models=True), 
+                                              metadata=self.route_metadata)
         providers = [LLMProvider(name=provider.name, models=provider.models) for provider in response.providers]
 
         self._providers_to_model_cache = {}
@@ -85,7 +119,7 @@ class LLMModelsClient(BaseClient):
     def register_llm(self, request: LLMRegisterRequest) -> LLMRegisterResponse:
 
         grpc_request = self._grpc_helper.build_grpc_registration_request(request)
-        grpc_response = self._stub.RegisterLLM(grpc_request)
+        grpc_response = self._stub.RegisterLLM(grpc_request, metadata=self.route_metadata)
 
         return LLMRegisterResponse(name=grpc_response.name, 
                                    status=grpc_response.status, 
@@ -93,12 +127,12 @@ class LLMModelsClient(BaseClient):
     
     def list_registered_llms(self, request: ListRegisteredLLMsRequest) -> ListRegisteredLLMsResponse:
         grpc_request = self._grpc_helper.list_registered_llms_request_to_grpc(request)
-        grpc_response = self._stub.ListRegisteredLLMs(grpc_request)
+        grpc_response = self._stub.ListRegisteredLLMs(grpc_request, metadata=self.route_metadata)
         return self._grpc_helper.serialize_list_registered_llms_grpc_response(grpc_response)
     
     def get_llm_status(self, request: GetLLMStatusRequest) -> LLMStatusResponse:
         grpc_request = self._grpc_helper.get_llm_status_to_grpc(request)
-        grpc_response = self._stub.GetLLMStatus(grpc_request)
+        grpc_response = self._stub.GetLLMStatus(grpc_request, metadata=self.route_metadata)
         return self._grpc_helper.serialze_get_llm_status_grpc_response(grpc_response)
 
         

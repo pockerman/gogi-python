@@ -51,6 +51,10 @@ if __name__ == '__main__':
     rich_print(f"Model response {model_response}")
 
     # # we can also stream the model response
+    llm_stream_request = platform.llm_clients.run_stream(llm_run_request)
+    
+    for chunk in llm_stream_request:
+        rich_print(chunk.token, end="", flush=True)
 
 
     # # We can add a new model
