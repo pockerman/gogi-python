@@ -2,10 +2,12 @@
 from typing import Optional, List, Any 
 
 from gogi.clients.models.llm.llm_capabilities import LLMCapabilities
+from gogi.clients.models.llm.requests.llm_capabilities_request import GetLLMCapabilitiesRequest
 from gogi.clients.models.llm.requests.llm_register_request import LLMRegisterRequest
 from gogi.clients.models.llm.requests.llm_request_status import GetLLMStatusRequest
 from gogi.clients.models.llm.requests.llm_run_request import LLMRunRequest
 from gogi.clients.models.llm.requests.list_registered_llm_request import ListRegisteredLLMsRequest
+from gogi.clients.models.llm.responses.llm_capabilities_response import LLMCapabilitiesResponse
 from gogi.clients.models.llm.responses.llm_run_response import LLMRunResponse
 from gogi.clients.models.llm.responses.llm_register_response import LLMRegisterResponse
 from gogi.clients.models.llm.responses.list_registered_llms_response import ListRegisteredLLMsResponse
@@ -139,6 +141,14 @@ class LLMModelsClientGRPCHelper:
         return LLMStatusResponse(name=grpc_response.name, status=grpc_response.status, endpoint=grpc_response.endpoint,
                                  last_checked=grpc_response.last_checked)
     
+    @staticmethod
+    def get_llm_capabilities_to_grpc(request: GetLLMCapabilitiesRequest) -> llm_model_service_pb2.GetLLMCapabilitiesRequest:
+        return llm_model_service_pb2.GetLLMCapabilitiesRequest(model=request.model)
+    
+    @staticmethod
+    def serialze_get_llm_capabilities_grpc_response(grpc_response: llm_model_service_pb2.LLMCapabilitiesResponse) -> LLMCapabilitiesResponse:
+        return LLMCapabilitiesResponse(capabilities=LLMModelsClientGRPCHelper.serialize_grpc_llm_capabilities(grpc_response.capabilities))
+        
     
     def __init__(self):
         pass 
