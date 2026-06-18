@@ -10,6 +10,7 @@ The client allows users to
 
 from loguru import logger
 
+
 from rich import print as rich_print
 
 from gogi.gogi import Gogi
@@ -17,7 +18,7 @@ from gogi.clients.models import (LLMRunRequest,
                           LLMRunRequestConfig, 
                           LLMessage, LLMRegisterRequest, 
                           LLMModelInfo, LLMCapabilities,
-                          ListRegisteredLLMsRequest)
+                          ListRegisteredLLMsRequest, GetLLMStatusRequest)
 
 
 
@@ -67,6 +68,10 @@ if __name__ == '__main__':
     # what models are registered:
     query_response = platform.llm_clients.list_registered_llms(ListRegisteredLLMsRequest())
     rich_print(f"Registered LLMs response {query_response}")
+
+    # check the status of an LLM model
+    query_response = platform.llm_clients.get_llm_status(GetLLMStatusRequest(name="my-model"))
+    rich_print(f"LLM status response {query_response}")
 
 
 

@@ -2,6 +2,7 @@
 from typing import Optional, List, Any 
 from gogi.clients.base_client import BaseClient
 from gogi.clients.models.llm.requests.llm_register_request import LLMRegisterRequest
+from gogi.clients.models.llm.requests.llm_request_status import GetLLMStatusRequest
 from gogi.clients.models.llm.requests.llm_run_request import LLMRunRequest
 from gogi.clients.models.llm.requests.list_registered_llm_request import ListRegisteredLLMsRequest
 from gogi.clients.models.llm.responses.llm_run_response import LLMRunResponse
@@ -15,6 +16,7 @@ from gogi.clients.models.llm.llm_token_usage import LLMTokenUsage
 from gogi.clients.models.llm.llm_provider import LLMProvider
 
 from gogi.clients.grpc_helpers.llm_models_client_grpc_helpers import LLMModelsClientGRPCHelper
+from gogi.clients.models.llm.responses.llm_status_response import LLMStatusResponse
 from gogi.v1 import llm_model_service_pb2, llm_model_service_pb2_grpc
 
 
@@ -75,10 +77,14 @@ class LLMModelsClient(BaseClient):
                                    registered_at=grpc_response.registered_at)
     
     def list_registered_llms(self, request: ListRegisteredLLMsRequest) -> ListRegisteredLLMsResponse:
-
         grpc_request = self._grpc_helper.list_registered_llms_request_to_grpc(request)
         grpc_response = self._stub.ListRegisteredLLMs(grpc_request)
         return self._grpc_helper.serialize_list_registered_llms_grpc_response(grpc_response)
+    
+    def get_llm_status(self, request: GetLLMStatusRequest) -> LLMStatusResponse:
+        grpc_request = self._grpc_helper.get_llm_status_to_grpc(request)
+        grpc_response = self._stub.GetLLMStatus(grpc_request)
+        return self._grpc_helper.serialze_get_llm_status_grpc_response(grpc_response)
 
         
 

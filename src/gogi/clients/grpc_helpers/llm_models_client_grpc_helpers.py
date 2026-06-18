@@ -3,6 +3,7 @@ from typing import Optional, List, Any
 
 from gogi.clients.models.llm.llm_capabilities import LLMCapabilities
 from gogi.clients.models.llm.requests.llm_register_request import LLMRegisterRequest
+from gogi.clients.models.llm.requests.llm_request_status import GetLLMStatusRequest
 from gogi.clients.models.llm.requests.llm_run_request import LLMRunRequest
 from gogi.clients.models.llm.requests.list_registered_llm_request import ListRegisteredLLMsRequest
 from gogi.clients.models.llm.responses.llm_run_response import LLMRunResponse
@@ -17,6 +18,7 @@ from gogi.clients.models.llm.registered_llm import RegisteredLLM
 from gogi.clients.models.llm.llm_model_info import LLMModelInfo
 
 
+from gogi.clients.models.llm.responses.llm_status_response import LLMStatusResponse
 from gogi.v1 import llm_model_service_pb2, llm_model_service_pb2_grpc
 
 
@@ -126,6 +128,16 @@ class LLMModelsClientGRPCHelper:
                                 registered_at=model.registered_at,
                                 adapter_type=model.adapter_type) for model in grpc_response.models]
         return ListRegisteredLLMsResponse(models=models)
+    
+
+    @staticmethod
+    def get_llm_status_to_grpc(request: GetLLMStatusRequest) -> llm_model_service_pb2.GetLLMStatusRequest:
+        return llm_model_service_pb2.GetLLMStatusRequest(name=request.name)
+    
+    @staticmethod
+    def serialze_get_llm_status_grpc_response(grpc_response: llm_model_service_pb2.LLMStatusResponse) -> LLMStatusResponse:
+        return LLMStatusResponse(name=grpc_response.name, status=grpc_response.status, endpoint=grpc_response.endpoint,
+                                 last_checked=grpc_response.last_checked)
     
     
     def __init__(self):
