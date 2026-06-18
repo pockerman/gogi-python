@@ -7,18 +7,10 @@ to create an index under which the data will exist
 """
 
 from loguru import logger
-import tempfile
-from pathlib import Path
 from rich import print as rich_print
-import uuid
+
 
 from gogi.gogi import Gogi
-from gogi.clients.models.index_config import IndexConfig
-from gogi.clients.models.ingest_document import IngestDocumentRequest
-from gogi.utils.document_ingestion_polling import wait_for_document_ingest
-
-
-
 
 
 

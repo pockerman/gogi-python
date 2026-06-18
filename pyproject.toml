@@ -16,3 +16,13 @@ package-dir = {"" = "src"}
 
 [tool.uv.extra-build-dependencies]
 grpcio-tools = ["pkg_resources"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-cov>=5.0",
+]

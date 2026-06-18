@@ -2,7 +2,7 @@ from typing import List
 from loguru import logger
 
 
-from gogi.clients.models.index_config import IndexConfig
+
 from gogi.clients.models.gogi_index import GogiIndex
 from gogi.clients.base_client import BaseClient
 from gogi.v1.data import index_service_pb2
@@ -15,10 +15,6 @@ class IndexesClient(BaseClient):
 
     @staticmethod
     def proto_to_index(resp) -> GogiIndex:
-
-
-        print(resp)
-
         return GogiIndex(
             index_id=resp.id,
             index_name=resp.index_name,
