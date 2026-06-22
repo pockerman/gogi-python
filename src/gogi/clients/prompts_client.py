@@ -1,4 +1,4 @@
-from gogi.v1 import prompt_service_pb2
+from gogi.v1 import prompt_service_pb2, prompt_service_pb2_grpc
 
 from gogi.clients.base_client import BaseClient
 from gogi.clients.models.llm.requests.prompt_registration_request import PromptRegistrationRequest
@@ -17,7 +17,7 @@ class PromptsClient(BaseClient):
     def __init__(self, platform, logger=None):
         super().__init__(platform=platform, service_name="prompts", logger=logger)
         self._grpc_helper = PromptsClientGRPCHelper()
-        self._stub = prompt_service_pb2.PromptServerStub(self._channel)
+        self._stub = prompt_service_pb2_grpc.PromptServerStub(self._channel)
         self._prompts_cache: dict[str, PromptGetResponse] = {}
         
 
@@ -45,7 +45,7 @@ class PromptsClient(BaseClient):
         response = self._grpc_helper.serialize_delete_prompt_grpc_response(grpc_response=grpc_response) 
 
         if request.prompt_id in self._prompts_cache:
-            self._prompts_cache.popitem(request.prompt_id)
+            self._prompts_cache.pop(request.prompt_id)
 
         return response
 

@@ -55,9 +55,7 @@ class PromptsClientGRPCHelper:
 
         return PromptRegistrationResponse(
             prompt_id=grpc_response.prompt_id,
-            prompt_name=grpc_response.prompt_name,
-            prompt_version=grpc_response.prompt_version,
-            registered_at=grpc_response.registered_at.ToDatetime(),
+            #registered_at=grpc_response.registered_at.ToDatetime(),
         )
 
     @staticmethod
