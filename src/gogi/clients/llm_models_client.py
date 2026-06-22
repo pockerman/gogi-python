@@ -52,7 +52,7 @@ class LLMModelsClient(BaseClient):
         self._grpc_helper.validate_provider_supports_model(request=request, models=self.provider_models(provider=request.config.provider))
 
         grpc_request = self._grpc_helper.build_grpc_request(req=request)
-        response = self._stub.Run(grpc_request)
+        response = self._stub.Run(grpc_request, metadata=self.route_metadata)
 
         return LLMRunResponse(content=response.content, model=response.model,
                            provider=response.provider,
