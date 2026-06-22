@@ -2,8 +2,15 @@ from .llm.requests.llm_run_request import LLMRunRequest
 from .llm.requests.llm_register_request import LLMRegisterRequest
 from .llm.requests.list_registered_llm_request import ListRegisteredLLMsRequest
 from .llm.requests.llm_request_status import GetLLMStatusRequest
+from .llm.requests.prompt_registration_request import PromptRegistrationRequest
+from .llm.requests.prompt_get_request import PromptGetRequest
+from .llm.requests.prompts_delete_request import PromptDeleteRequest
 from .llm.responses.llm_run_response import LLMRunResponse
 from .llm.responses.llm_status_response import LLMStatusResponse
+from .llm.responses.prompt_registration_response import PromptRegistrationResponse
+from .llm.responses.prompt_get_response import PromptGetResponse
+from .llm.responses.prompt_delete_response import PromptDeleteResponse
+
 from .llm.llm_message import LLMessage
 from .llm.llm_capabilities import LLMCapabilities
 from .llm.llm_function_definition import LLMFunctionDefinition
