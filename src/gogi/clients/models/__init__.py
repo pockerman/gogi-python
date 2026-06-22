@@ -20,3 +20,7 @@ from .llm.llm_run_request_config import LLMRunRequestConfig
 from .llm.llm_token_usage import LLMTokenUsage
 from .llm.llm_tool_definition import LLMToolDefinition
 from .llm.registered_llm import RegisteredLLM
+
+from .prompts.prompt_metadata import ( PromptMetadata, 
+                                       PromptParameters, 
+                                       PromptTestInfo)

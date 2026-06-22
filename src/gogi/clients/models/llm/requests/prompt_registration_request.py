@@ -1,4 +1,12 @@
 from pydantic import BaseModel 
+from typing import Dict
+
+
+from gogi.clients.models.prompts.prompt_metadata import PromptMetadata
 
 class PromptRegistrationRequest(BaseModel):
-    prompt_id: str
+    prompt_name: str
+    prompt_version: str
+    gogi_index: str
+    content: bytes
+    metadata: PromptMetadata
