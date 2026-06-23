@@ -4,13 +4,13 @@ import uuid
 
 
 from gogi.clients.llm_models_client import LLMModelsClient
-from gogi.clients import (LLMRequest, LLMRunRequestConfig, LLMTokenUsage, LLMToolCall, ToolCallFunction)
+from gogi.clients.models import (LLMRunRequest, LLMRunRequestConfig, LLMTokenUsage, LLMToolCall, ToolCallFunction)
 
 
 
 @pytest.fixture
 def llm_request():
-    return LLMRequest(
+    return LLMRunRequest(
         messages=[],
         config=LLMRunRequestConfig(
             provider="anthropic",
