@@ -18,7 +18,7 @@ from .llm.llm_model_info import LLMModelInfo
 from .llm.llm_response_format import LLMRespnseFormat
 from .llm.llm_run_request_config import LLMRunRequestConfig
 from .llm.llm_token_usage import LLMTokenUsage
-from .llm.llm_tool_definition import LLMToolDefinition
+from .llm.llm_tool_definition import LLMToolDefinition, ToolCallFunction, LLMToolCall
 from .llm.registered_llm import RegisteredLLM
 
 from .prompts.prompt_metadata import ( PromptMetadata, 
