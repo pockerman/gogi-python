@@ -35,7 +35,7 @@ jobs:
           find src -name "*_pb2_grpc.py"
 
       - name: Install package
-        run: uv pip install --system -e ".[dev]"
+        run: uv pip install -e ".[dev]"
 
       - name: Run tests
         run: uv run pytest tests -v --cov=gogi --cov-report=term-missing
