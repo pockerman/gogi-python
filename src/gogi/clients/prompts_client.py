@@ -1,4 +1,4 @@
-from gogi.v1 import prompt_service_pb2, prompt_service_pb2_grpc
+from gogi.v1 import prompt_service_pb2_grpc
 
 from gogi.clients.base_client import BaseClient
 from gogi.clients.models.llm.requests.prompt_registration_request import PromptRegistrationRequest
