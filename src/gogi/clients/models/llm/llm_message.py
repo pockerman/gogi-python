@@ -1,12 +1,12 @@
 from pydantic import BaseModel
 from typing import Literal, Self, Optional
 
-class LLMessage(BaseModel):
+class LLMMessage(BaseModel):
     role: Literal["user", "system", "assistant"]
     content: Optional[str] = None 
 
 class LLMMessageGroup(BaseModel):
-    messages: list[LLMessage]
+    messages: list[LLMMessage]
 
     @classmethod
     def build(cls, messages: list[dict[str, str]]) -> Self:

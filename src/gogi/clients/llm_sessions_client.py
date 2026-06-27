@@ -2,11 +2,19 @@
 from typing import Optional
 
 from gogi.clients.models.llm.llm_session import LLMSession
+from gogi.clients.models.llm.requests.llm_session.add_messages_to_llm_session_request import AddMessagesToLLMSessionRequest
+from gogi.clients.models.llm.requests.llm_session.clear_user_llm_session_memory_request import ClearUserLLMSessionMemoryRequest
+from gogi.clients.models.llm.requests.llm_session.delete_llm_session_memory_request import DeleteLLMSessionMemoryRequest
+from gogi.clients.models.llm.requests.llm_session.delete_llm_session_request import DeleteLLMSessionRequest
+from gogi.clients.models.llm.requests.llm_session.get_llm_session_memory_request import GetLLMSessionMemoryRequest
+from gogi.clients.models.llm.requests.llm_session.get_messages_from_llm_session_request import GetMessagesFromLLMSessionRequest
+from gogi.clients.models.llm.requests.llm_session.list_llm_session_request import ListLLMSessionsRequest
+from gogi.clients.models.llm.requests.llm_session.save_llm_session_memory_request import SaveLLMSessionMemoryRequest
 from gogi.v1 import llm_session_service_pb2_grpc
 from gogi.clients.base_client import BaseClient
 
 from gogi.clients.grpc_helpers.llm_sessions_client_grpc_helpers import LLMSessionsClientGRPCHelper
-from gogi.clients.models.llm.requests.create_llm_session_request import CreateSessionRequest
+from gogi.clients.models.llm.requests.llm_session.create_llm_session_request import CreateSessionRequest
 
 class LLMSessionMemoryManager(BaseClient):
     
@@ -17,6 +25,7 @@ class LLMSessionMemoryManager(BaseClient):
 
     def save_memory(request: SaveLLMSessionMemoryRequest) -> SaveLLMSessionMemoryResponse:
         pass 
+    
     def get_memory(request: GetLLMSessionMemoryRequest) -> GetLLMSessionMemoryResponse:
         pass 
 
