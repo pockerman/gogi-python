@@ -4,6 +4,7 @@ from gogi.clients.documents_client import DocumentsClient
 from gogi.clients.indexes_client import IndexesClient
 from gogi.clients.llm_models_client import LLMModelsClient
 from gogi.clients.prompts_client import PromptsClient
+from gogi.clients.llm_sessions_client import LLMSessionsClient
 
 class Gogi:
     """
@@ -27,7 +28,7 @@ class Gogi:
         self.logger = logger
 
         # Lazy initialization - clients created on first access
-        self._sessions = None
+        self._llm_sessions: Optional[LLMSessionsClient] = None
         self._indexes: Optional[IndexesClient] = None
         self._documents: Optional[DocumentsClient] = None
         self._llm_models: Optional[LLMModelsClient] = None
@@ -54,6 +55,13 @@ class Gogi:
         if not self._llm_models:
             self._llm_models = LLMModelsClient(platform=self, logger=self.logger)
         return self._llm_models
+    
+    @property
+    def llm_session(self) -> LLMSessionsClient:
+        if not self._llm_sessions:
+                 self._llm_models = LLMSessionsClient(platform=self, logger=self.logger)
+        return self._llm_sessions
+
     
     @property
     def prompts(self) -> PromptsClient:

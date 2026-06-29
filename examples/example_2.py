@@ -10,8 +10,8 @@ from rich import print as rich_print
 import uuid
 
 from gogi.gogi import Gogi
-from gogi.clients.models.index_config import IndexConfig
-from gogi.clients.models.ingest_document import IngestDocumentRequest
+from gogi.models.index_config import IndexConfig
+from gogi.models.ingest_document import IngestDocumentRequest
 from gogi.utils.document_ingestion_polling import wait_for_document_ingest
 
 def create_temp_document(filename: str) -> bytes:

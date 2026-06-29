@@ -3,7 +3,7 @@ from loguru import logger
 
 
 
-from gogi.clients.models.gogi_index import GogiIndex
+from gogi.models.gogi_index import GogiIndex
 from gogi.clients.base_client import BaseClient
 from gogi.v1.data import index_service_pb2
 from gogi.v1.data import index_service_pb2_grpc

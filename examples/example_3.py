@@ -11,12 +11,12 @@ The client allows users to
 from loguru import logger
 
 
-from gogi.clients.models.llm.requests.list_llms_request import ListLLMsRequest
-from gogi.clients.models.llm.requests.llm_capabilities_request import GetLLMCapabilitiesRequest
+from gogi.models.llm.requests.list_llms_request import ListLLMsRequest
+from gogi.models.llm.requests.llm_capabilities_request import GetLLMCapabilitiesRequest
 from rich import print as rich_print
 
 from gogi.gogi import Gogi
-from gogi.clients.models import (LLMRunRequest, 
+from gogi.models import (LLMRunRequest, 
                           LLMRunRequestConfig, 
                           LLMessage, LLMRegisterRequest, 
                           LLMModelInfo, LLMCapabilities,

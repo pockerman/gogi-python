@@ -3,23 +3,23 @@ from typing import Optional, List, Iterator
 import grpc 
 
 from gogi.clients.base_client import BaseClient
-from gogi.clients.models.llm.requests.list_llms_request import ListLLMsRequest
-from gogi.clients.models.llm.requests.llm_capabilities_request import GetLLMCapabilitiesRequest
-from gogi.clients.models.llm.requests.llm_register_request import LLMRegisterRequest
-from gogi.clients.models.llm.requests.llm_request_status import GetLLMStatusRequest
-from gogi.clients.models.llm.requests.llm_run_request import LLMRunRequest
-from gogi.clients.models.llm.requests.list_registered_llm_request import ListRegisteredLLMsRequest
-from gogi.clients.models.llm.responses.list_llms_response import ListLLMsResponse
-from gogi.clients.models.llm.responses.llm_capabilities_response import LLMCapabilitiesResponse
-from gogi.clients.models.llm.responses.llm_run_response import LLMRunResponse
-from gogi.clients.models.llm.responses.llm_register_response import LLMRegisterResponse
-from gogi.clients.models.llm.responses.list_registered_llms_response import ListRegisteredLLMsResponse
-from gogi.clients.models.llm.responses.llm_run_stream_chunk import LLMRunStreamChunk
-from gogi.clients.models.llm.llm_token_usage import LLMTokenUsage
-from gogi.clients.models.llm.llm_provider import LLMProvider
+from gogi.models.llm.requests.list_llms_request import ListLLMsRequest
+from gogi.models.llm.requests.llm_capabilities_request import GetLLMCapabilitiesRequest
+from gogi.models.llm.requests.llm_register_request import LLMRegisterRequest
+from gogi.models.llm.requests.llm_request_status import GetLLMStatusRequest
+from gogi.models.llm.requests.llm_run_request import LLMRunRequest
+from gogi.models.llm.requests.list_registered_llm_request import ListRegisteredLLMsRequest
+from gogi.models.llm.responses.list_llms_response import ListLLMsResponse
+from gogi.models.llm.responses.llm_capabilities_response import LLMCapabilitiesResponse
+from gogi.models.llm.responses.llm_run_response import LLMRunResponse
+from gogi.models.llm.responses.llm_register_response import LLMRegisterResponse
+from gogi.models.llm.responses.list_registered_llms_response import ListRegisteredLLMsResponse
+from gogi.models.llm.responses.llm_run_stream_chunk import LLMRunStreamChunk
+from gogi.models.llm.llm_token_usage import LLMTokenUsage
+from gogi.models.llm.llm_provider import LLMProvider
 
 from gogi.clients.grpc_helpers.llm_models_client_grpc_helpers import LLMModelsClientGRPCHelper
-from gogi.clients.models.llm.responses.llm_status_response import LLMStatusResponse
+from gogi.models.llm.responses.llm_status_response import LLMStatusResponse
 from gogi.v1 import llm_model_service_pb2, llm_model_service_pb2_grpc
 
 

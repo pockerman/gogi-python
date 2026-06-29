@@ -1,9 +1,5 @@
 from pydantic import BaseModel, Field
 from datetime import datetime, timezone
-from typing import Optional
-
-from gogi.clients.models.index_config import IndexConfig
-
 
 class GogiIndex(BaseModel):
     """A knowledge index with configuration and runtime stats"""

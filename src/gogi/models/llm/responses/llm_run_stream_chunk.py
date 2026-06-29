@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 from typing import Optional
 
-from gogi.clients.models.llm.llm_token_usage import LLMTokenUsage
+from gogi.models.llm.llm_token_usage import LLMTokenUsage
 
 class LLMRunStreamChunk(BaseModel):
     token: str = ""
