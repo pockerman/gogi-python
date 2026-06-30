@@ -14,7 +14,7 @@ from gogi.models.llm.responses.llm_run_response import LLMRunResponse
 from gogi.models.llm.responses.llm_register_response import LLMRegisterResponse
 from gogi.models.llm.responses.list_registered_llms_response import ListRegisteredLLMsResponse
 
-from gogi.models.llm.llm_message import LLMessage
+from gogi.models.llm.llm_message import LLMMessage
 from gogi.models.llm.llm_tool_definition import LLMToolCall, LLMToolDefinition, ToolCallFunction
 from gogi.models.llm.llm_run_request_config import LLMRunRequestConfig
 from gogi.models.llm.llm_token_usage import LLMTokenUsage
@@ -43,7 +43,7 @@ class LLMModelsClientGRPCHelper:
             raise ValueError(f"Provider={request.config.provider} does not support model {request.config.model}")
           
     @staticmethod
-    def request_messages_to_grpc_messages(messages: List[LLMessage]) -> List[llm_model_service_pb2.LLMMessage]:
+    def request_messages_to_grpc_messages(messages: List[LLMMessage]) -> List[llm_model_service_pb2.LLMMessage]:
         return [llm_model_service_pb2.LLMMessage(role=msg.role, content=msg.content) for msg in messages]
     
     @staticmethod

@@ -1,7 +1,7 @@
 from pydantic import BaseModel 
 
 
-from gogi.clients.models.prompts.prompt_metadata import PromptMetadata
+from gogi.models.prompts.prompt_metadata import PromptMetadata
 
 
 class PromptGetResponse(BaseModel):

@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import List
 
 
-from gogi.clients.models.llm.llm_session import LLMSession
+from gogi.models.llm.llm_session import LLMSession
 
 class GetMessagesFromLLMSessionResponse(BaseModel):
     messages: List[LLMSession]

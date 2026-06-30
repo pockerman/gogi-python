@@ -1,28 +1,28 @@
 
 from typing import Optional
 
-from gogi.clients.models.llm.llm_session import LLMSession
-from gogi.clients.models.llm.requests.llm_session.add_messages_to_llm_session_request import AddMessagesToLLMSessionRequest
-from gogi.clients.models.llm.requests.llm_session.clear_user_llm_session_memory_request import ClearUserLLMSessionMemoryRequest
-from gogi.clients.models.llm.requests.llm_session.delete_llm_session_memory_request import DeleteLLMSessionMemoryRequest
-from gogi.clients.models.llm.requests.llm_session.delete_llm_session_request import DeleteLLMSessionRequest
-from gogi.clients.models.llm.requests.llm_session.get_llm_session_memory_request import GetLLMSessionMemoryRequest
-from gogi.clients.models.llm.requests.llm_session.get_messages_from_llm_session_request import GetMessagesFromLLMSessionRequest
-from gogi.clients.models.llm.requests.llm_session.list_llm_session_request import ListLLMSessionsRequest
-from gogi.clients.models.llm.requests.llm_session.save_llm_session_memory_request import SaveLLMSessionMemoryRequest
-from gogi.clients.models.llm.responses.llm_session.add_messages_to_llm_session_response import AddMMessagesToLLMSessionResponse
-from gogi.clients.models.llm.responses.llm_session.clear_user_llm_session_memory_response import ClearUserLLMSessionMemoryResponse
-from gogi.clients.models.llm.responses.llm_session.delete_llm_session_memory_response import DeleteLLMSessionMemoryResponse
-from gogi.clients.models.llm.responses.llm_session.delete_llm_session_response import DeleteLLMSessionResponse
-from gogi.clients.models.llm.responses.llm_session.get_llm_session_memory_response import GetLLMSessionMemoryResponse
-from gogi.clients.models.llm.responses.llm_session.get_messages_from_llm_session_response import GetMessagesFromLLMSessionResponse
-from gogi.clients.models.llm.responses.llm_session.list_llm_sessions_response import ListLLMSessionsResponse
-from gogi.clients.models.llm.responses.llm_session.save_llm_session_memory_response import SaveLLMSessionMemoryResponse
+from gogi.models.llm.llm_session import LLMSession
+from gogi.models.llm.requests.llm_session.add_messages_to_llm_session_request import AddMessagesToLLMSessionRequest
+from gogi.models.llm.requests.llm_session.clear_user_llm_session_memory_request import ClearUserLLMSessionMemoryRequest
+from gogi.models.llm.requests.llm_session.delete_llm_session_memory_request import DeleteLLMSessionMemoryRequest
+from gogi.models.llm.requests.llm_session.delete_llm_session_request import DeleteLLMSessionRequest
+from gogi.models.llm.requests.llm_session.get_llm_session_memory_request import GetLLMSessionMemoryRequest
+from gogi.models.llm.requests.llm_session.get_messages_from_llm_session_request import GetMessagesFromLLMSessionRequest
+from gogi.models.llm.requests.llm_session.list_llm_session_request import ListLLMSessionsRequest
+from gogi.models.llm.requests.llm_session.save_llm_session_memory_request import SaveLLMSessionMemoryRequest
+from gogi.models.llm.responses.llm_session.add_messages_to_llm_session_response import AddMMessagesToLLMSessionResponse
+from gogi.models.llm.responses.llm_session.clear_user_llm_session_memory_response import ClearUserLLMSessionMemoryResponse
+from gogi.models.llm.responses.llm_session.delete_llm_session_memory_response import DeleteLLMSessionMemoryResponse
+from gogi.models.llm.responses.llm_session.delete_llm_session_response import DeleteLLMSessionResponse
+from gogi.models.llm.responses.llm_session.get_llm_session_memory_response import GetLLMSessionMemoryResponse
+from gogi.models.llm.responses.llm_session.get_messages_from_llm_session_response import GetMessagesFromLLMSessionResponse
+from gogi.models.llm.responses.llm_session.list_llm_sessions_response import ListLLMSessionsResponse
+from gogi.models.llm.responses.llm_session.save_llm_session_memory_response import SaveLLMSessionMemoryResponse
 from gogi.v1 import llm_session_service_pb2_grpc
 from gogi.clients.base_client import BaseClient
 
 from gogi.clients.grpc_helpers.llm_sessions_client_grpc_helpers import LLMSessionsClientGRPCHelper
-from gogi.clients.models.llm.requests.llm_session.create_llm_session_request import CreateSessionRequest
+from gogi.models.llm.requests.llm_session.create_llm_session_request import CreateSessionRequest
 
 class LLMSessionMemoryManager(BaseClient):
     
@@ -51,7 +51,10 @@ class LLMSessionsClient(BaseClient):
         self._memory_manager = LLMSessionMemoryManager(platform=platform, logger=logger)
 
     def get_or_create_session(self, request: CreateSessionRequest) -> LLMSession:
-        pass 
+        grpc_request = self._grpc_helper.build_grpc_create_session_request(request)
+        grpc_response = self._stub.GetOrCreateSession(grpc_request)
+        response = self._grpc_helper.serialize_create_session_grpc_response(grpc_response)
+        return response
 
     def delete_session(self, request: DeleteLLMSessionRequest) -> DeleteLLMSessionResponse:
         pass
