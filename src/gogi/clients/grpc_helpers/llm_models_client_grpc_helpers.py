@@ -24,6 +24,8 @@ from gogi.models.llm.llm_model_info import LLMModelInfo
 
 from gogi.models.llm.responses.llm_status_response import LLMStatusResponse
 from gogi.v1 import llm_model_service_pb2, llm_model_service_pb2_grpc
+from gogi.v1 import llm_message_pb2
+from gogi.v1 import llm_tool_pb2
 
 
 
@@ -43,8 +45,8 @@ class LLMModelsClientGRPCHelper:
             raise ValueError(f"Provider={request.config.provider} does not support model {request.config.model}")
           
     @staticmethod
-    def request_messages_to_grpc_messages(messages: List[LLMMessage]) -> List[llm_model_service_pb2.LLMMessage]:
-        return [llm_model_service_pb2.LLMMessage(role=msg.role, content=msg.content) for msg in messages]
+    def request_messages_to_grpc_messages(messages: List[LLMMessage]) -> List[llm_message_pb2.LLMMessage]:
+        return [llm_message_pb2.LLMMessage(role=msg.role, content=msg.content) for msg in messages]
     
     @staticmethod
     def request_config_to_grpc_request_config(config: LLMRunRequestConfig) -> llm_model_service_pb2.LLMRunRequestConfig:
@@ -56,8 +58,8 @@ class LLMModelsClientGRPCHelper:
                                                          system_prompt_name=config.system_prompt_name)
     
     @staticmethod
-    def request_tools_to_grpcs_tools(tools: List[LLMToolDefinition]) -> List[llm_model_service_pb2.ToolDefinition]:
-        return [llm_model_service_pb2.ToolDefinition(type=tool.tool_type, function=tool.function) for tool in tools] if tools else []
+    def request_tools_to_grpcs_tools(tools: List[LLMToolDefinition]) -> List[llm_tool_pb2.ToolDefinition]:
+        return [llm_tool_pb2.ToolDefinition(type=tool.tool_type, function=tool.function) for tool in tools] if tools else []
     
     @staticmethod
     def build_grpc_request(req: LLMRunRequest) -> llm_model_service_pb2.LLMRunRequest:

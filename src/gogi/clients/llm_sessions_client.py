@@ -22,7 +22,7 @@ from gogi.v1 import llm_session_service_pb2_grpc
 from gogi.clients.base_client import BaseClient
 
 from gogi.clients.grpc_helpers.llm_sessions_client_grpc_helpers import LLMSessionsClientGRPCHelper
-from gogi.models.llm.requests.llm_session.create_llm_session_request import CreateSessionRequest
+from gogi.models.llm.requests.llm_session.create_llm_session_request import CreateLLMSessionRequest
 
 class LLMSessionMemoryManager(BaseClient):
     
@@ -31,17 +31,23 @@ class LLMSessionMemoryManager(BaseClient):
         self._grpc_helper = LLMSessionsClientGRPCHelper()
         self._stub = llm_session_service_pb2_grpc.LLMSessionServerStub(self._channel)
 
-    def save_memory(request: SaveLLMSessionMemoryRequest) -> SaveLLMSessionMemoryResponse:
+    def save_memory(self, request: SaveLLMSessionMemoryRequest) -> SaveLLMSessionMemoryResponse:
         pass 
     
-    def get_memory(request: GetLLMSessionMemoryRequest) -> GetLLMSessionMemoryResponse:
+    def get_memory(self, request: GetLLMSessionMemoryRequest) -> GetLLMSessionMemoryResponse:
         pass 
 
-    def delete_memory(request: DeleteLLMSessionMemoryRequest) -> DeleteLLMSessionMemoryResponse:
-        pass 
+    def delete_memory(self, request: DeleteLLMSessionMemoryRequest) -> DeleteLLMSessionMemoryResponse:
+        grpc_request = self._grpc_helper.build_grpc_delete_memory_request(request)
+        grpc_response = self._stub.DeleteMemory(grpc_request)
+        response = self._grpc_helper.serialize_delete_memory_grpc_response(grpc_response)
+        return response 
 
-    def clear_user_memory(request: ClearUserLLMSessionMemoryRequest) -> ClearUserLLMSessionMemoryResponse:
-        pass
+    def clear_user_memory(self, request: ClearUserLLMSessionMemoryRequest) -> ClearUserLLMSessionMemoryResponse:
+        grpc_request = self._grpc_helper.build_grpc_clear_user_memory_request(request)
+        grpc_response = self._stub.ClearUserMemory(grpc_request)
+        response = self._grpc_helper.serialize_clear_user_memory_grpc_response(grpc_response)
+        return response
 
 class LLMSessionsClient(BaseClient):
     def __init__(self, platform, logger=None):
@@ -50,20 +56,26 @@ class LLMSessionsClient(BaseClient):
         self._stub = llm_session_service_pb2_grpc.LLMSessionServerStub(self._channel)
         self._memory_manager = LLMSessionMemoryManager(platform=platform, logger=logger)
 
-    def get_or_create_session(self, request: CreateSessionRequest) -> LLMSession:
+    def get_or_create_session(self, request: CreateLLMSessionRequest) -> LLMSession:
         grpc_request = self._grpc_helper.build_grpc_create_session_request(request)
         grpc_response = self._stub.GetOrCreateSession(grpc_request)
         response = self._grpc_helper.serialize_create_session_grpc_response(grpc_response)
         return response
 
     def delete_session(self, request: DeleteLLMSessionRequest) -> DeleteLLMSessionResponse:
-        pass
+        grpc_request = self._grpc_helper.build_grpc_delete_session_request(request)
+        grpc_response = self._stub.DeleteSession(grpc_request)
+        response = self._grpc_helper.serialize_delete_session_grpc_response(grpc_response)
+        return response
 
     def list_sessions(self, request: ListLLMSessionsRequest) -> ListLLMSessionsResponse:
         pass 
 
     def add_messages_to_session(self, request: AddMessagesToLLMSessionRequest) -> AddMMessagesToLLMSessionResponse:
-        pass 
+        grpc_request = self._grpc_helper.build_grpc_add_messages_to_session_request(request)
+        grpc_response = self._stub.AddMessages(grpc_request)
+        response = self._grpc_helper.serialize_add_messages_to_session_grpc_response(grpc_response)
+        return response 
 
     def get_messages(self, request: GetMessagesFromLLMSessionRequest) -> GetMessagesFromLLMSessionResponse:
         pass 

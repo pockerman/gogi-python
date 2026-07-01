@@ -59,7 +59,7 @@ class Gogi:
     @property
     def llm_session(self) -> LLMSessionsClient:
         if not self._llm_sessions:
-                 self._llm_models = LLMSessionsClient(platform=self, logger=self.logger)
+                 self._llm_sessions = LLMSessionsClient(platform=self, logger=self.logger)
         return self._llm_sessions
 
     

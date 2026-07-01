@@ -3,23 +3,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# PROTO_DIR = ROOT / "vendor/protos"
-# OUT_DIR = ROOT / "src"
 
-# OUT_DIR.mkdir(parents=True, exist_ok=True)
-
-# protos = list((PROTO_DIR / "gogi").rglob("*.proto")) #list(PROTO_DIR.rglob("*.proto"))
-
-# cmd = [
-#     "python",
-#     "-m",
-#     "grpc_tools.protoc",
-#     f"-I={PROTO_DIR}",              # IMPORTANT: root includes gogi/
-#     f"--python_out={OUT_DIR}",
-#     f"--grpc_python_out={OUT_DIR}",
-# ]
-
-PROTO_DIR = ROOT / "vendor/protos"
+PROTO_DIR = ROOT / "vendor/protos/gogi"
 OUT_DIR = ROOT / "src"
 
 OUT_DIR.mkdir(parents=True, exist_ok=True)
