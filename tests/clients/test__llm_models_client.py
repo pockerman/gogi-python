@@ -4,7 +4,7 @@ import uuid
 
 
 from gogi.clients.llm_models_client import LLMModelsClient
-from gogi.clients.models import (LLMRunRequest, LLMRunRequestConfig, LLMTokenUsage, LLMToolCall, ToolCallFunction)
+from gogi.models import (LLMRunRequest, LLMRunRequestConfig, LLMTokenUsage, LLMToolCall, ToolCallFunction)
 
 
 

@@ -11,7 +11,7 @@ from .llm.responses.prompt_registration_response import PromptRegistrationRespon
 from .llm.responses.prompt_get_response import PromptGetResponse
 from .llm.responses.prompt_delete_response import PromptDeleteResponse
 
-from .llm.llm_message import LLMessage
+from .llm.llm_message import LLMMessage
 from .llm.llm_capabilities import LLMCapabilities
 from .llm.llm_function_definition import LLMFunctionDefinition
 from .llm.llm_model_info import LLMModelInfo
@@ -24,3 +24,12 @@ from .llm.registered_llm import RegisteredLLM
 from .prompts.prompt_metadata import ( PromptMetadata, 
                                        PromptParameters, 
                                        PromptTestInfo)
+from .llm.requests.llm_session.add_messages_to_llm_session_request import AddMessagesToLLMSessionRequest
+from .llm.requests.llm_session.create_llm_session_request import CreateLLMSessionRequest
+from .llm.requests.llm_session.clear_user_llm_session_memory_request import ClearUserLLMSessionMemoryRequest
+from .llm.requests.llm_session.delete_llm_session_memory_request import DeleteLLMSessionMemoryRequest
+from .llm.requests.llm_session.delete_llm_session_request import DeleteLLMSessionRequest
+from .llm.requests.llm_session.get_llm_session_memory_request import GetLLMSessionMemoryRequest
+from .llm.requests.llm_session.get_messages_from_llm_session_request import GetMessagesFromLLMSessionRequest
+from .llm.requests.llm_session.list_llm_session_request import ListLLMSessionsRequest
+from .llm.requests.llm_session.save_llm_session_memory_request import SaveLLMSessionMemoryRequest

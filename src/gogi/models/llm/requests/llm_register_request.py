@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from gogi.clients.models.llm.llm_model_info import LLMModelInfo
+from gogi.models.llm.llm_model_info import LLMModelInfo
 
 class LLMRegisterRequest(BaseModel):
     info: LLMModelInfo

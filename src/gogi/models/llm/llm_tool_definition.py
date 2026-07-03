@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 
-from gogi.clients.models.llm.llm_function_definition import LLMFunctionDefinition
+from gogi.models.llm.llm_function_definition import LLMFunctionDefinition
 
 class LLMToolDefinition(BaseModel):
     tool_type: str

@@ -1,8 +1,8 @@
 from typing import List, Optional
 from pathlib import Path
 
-from gogi.clients.models.document_metadata import DocumentMetadata
-from gogi.clients.models.ingest_document import IngestDocumentJob, IngestDocumentRequest
+from gogi.models.document_metadata import DocumentMetadata
+from gogi.models.ingest_document import IngestDocumentJob, IngestDocumentRequest
 from gogi.clients.base_client import BaseClient
 from gogi.v1.data import document_service_pb2
 from gogi.v1.data import document_service_pb2_grpc

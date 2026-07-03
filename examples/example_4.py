@@ -12,7 +12,7 @@ The client allows users to
 from loguru import logger
 from rich import print as rich_print
 
-from gogi.clients.models import (PromptRegistrationRequest, PromptTestInfo, PromptMetadata, PromptParameters,
+from gogi.models import (PromptRegistrationRequest, PromptTestInfo, PromptMetadata, PromptParameters,
                                  PromptGetRequest, 
                                  PromptDeleteRequest)
 from gogi.gogi import Gogi

@@ -1,13 +1,13 @@
 
-from gogi.clients.models.llm.requests.prompt_registration_request import PromptRegistrationRequest
-from gogi.clients.models.llm.requests.prompt_get_request import PromptGetRequest
-from gogi.clients.models.llm.requests.prompts_delete_request import PromptDeleteRequest
+from gogi.models.llm.requests.prompt_registration_request import PromptRegistrationRequest
+from gogi.models.llm.requests.prompt_get_request import PromptGetRequest
+from gogi.models.llm.requests.prompts_delete_request import PromptDeleteRequest
 
-from gogi.clients.models.llm.responses.prompt_registration_response import PromptRegistrationResponse
-from gogi.clients.models.llm.responses.prompt_get_response import PromptGetResponse
-from gogi.clients.models.llm.responses.prompt_delete_response import PromptDeleteResponse
+from gogi.models.llm.responses.prompt_registration_response import PromptRegistrationResponse
+from gogi.models.llm.responses.prompt_get_response import PromptGetResponse
+from gogi.models.llm.responses.prompt_delete_response import PromptDeleteResponse
 
-from gogi.clients.models.prompts.prompt_metadata import (
+from gogi.models.prompts.prompt_metadata import (
     PromptMetadata,
     PromptParameters,
     PromptTestInfo,
