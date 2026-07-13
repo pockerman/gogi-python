@@ -3,6 +3,7 @@ from typing import Optional
 from gogi.clients.documents_client import DocumentsClient
 from gogi.clients.indexes_client import IndexesClient
 from gogi.clients.llm_models_client import LLMModelsClient
+from gogi.clients.llm_tools_client import LLMToolsClient
 from gogi.clients.prompts_client import PromptsClient
 from gogi.clients.llm_sessions_client import LLMSessionsClient
 
@@ -34,7 +35,7 @@ class Gogi:
         self._llm_models: Optional[LLMModelsClient] = None
         self._prompts: Optional[PromptsClient] = None
         self._guardrails = None
-        self._tools = None
+        self._tools = Optional[LLMToolsClient] = None
         self._evaluation = None
         self._workflows = None
 
@@ -68,4 +69,10 @@ class Gogi:
         if not self._prompts:
             self._prompts = PromptsClient(platform=self, logger=self.logger)
         return self._prompts
+    
+    @property
+    def tools(self) -> LLMToolsClient:
+        if not self._tools:
+            self._tools = LLMToolsClient(platform=self, logger=self.logger)
+        return self._tools
     
