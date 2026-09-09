@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     # connect to the Gogi platform. 
     # This will be the first step in any interaction with the platform, and will 
-    # give you access to all of the available clients (indexes, documents, and queries).
+    # give you access to all the available clients (indexes, documents, and queries).
     platform = Gogi(gateway_url="localhost:50051", logger=logger)
 
     
