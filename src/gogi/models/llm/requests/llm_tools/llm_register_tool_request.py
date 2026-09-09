@@ -1,5 +1,7 @@
-from pydantic import BaseModel 
+from pydantic import BaseModel
+
+from gogi.models.llm.llm_tool_service_definition import LLMToolServiceDefinition
 
 
 class LLMRegisterToolRequest(BaseModel):
-    pass 
+    tool: LLMToolServiceDefinition

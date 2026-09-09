@@ -35,7 +35,7 @@ class Gogi:
         self._llm_models: Optional[LLMModelsClient] = None
         self._prompts: Optional[PromptsClient] = None
         self._guardrails = None
-        self._tools = Optional[LLMToolsClient] = None
+        self._tools: Optional[LLMToolsClient] = None
         self._evaluation = None
         self._workflows = None
 

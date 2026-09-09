@@ -1,5 +1,7 @@
-from pydantic import BaseModel 
+from pydantic import BaseModel
 
 
 class LLMRegisterToolResponse(BaseModel):
-    pass 
+    name: str
+    version: str
+    status: str
