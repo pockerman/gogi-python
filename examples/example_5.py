@@ -1,9 +1,11 @@
 """This example illustrates the LLMSessionsClient in gogi.
 The client allows users to: 
 
-- Register new prompts
-- Retrieve a prompt
-- Delete a prompt
+- Create a new session
+- List all available sessions
+- Add messages to a session
+- Get the messages associated with a session
+- Delete a sessions
 
 
 """

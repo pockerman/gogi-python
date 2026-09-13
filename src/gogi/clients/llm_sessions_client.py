@@ -1,6 +1,3 @@
-
-from typing import Optional
-
 from gogi.models.llm.llm_session import LLMSession
 from gogi.models.llm.requests.llm_session.add_messages_to_llm_session_request import AddMessagesToLLMSessionRequest
 from gogi.models.llm.requests.llm_session.clear_user_llm_session_memory_request import ClearUserLLMSessionMemoryRequest
