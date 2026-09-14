@@ -4,6 +4,7 @@ import uuid
 
 
 from gogi.clients.llm_models_client import LLMModelsClient
+from gogi.clients.grpc_helpers.llm_models_client_grpc_helpers import LLMModelsClientGRPCHelper
 from gogi.models import (LLMRunRequest, LLMRunRequestConfig, LLMTokenUsage, LLMToolCall, ToolCallFunction)
 
 
@@ -26,6 +27,9 @@ def client():
     # Avoid calling __init__ since it creates a gRPC channel.
     client = object.__new__(LLMModelsClient)
 
+    client._grpc_helper = LLMModelsClientGRPCHelper()
+    client._route_metadata = ()
+
     client._providers_to_model_cache = {
         "anthropic": [
             "claude-3-5-sonnet",
@@ -40,12 +44,20 @@ def client():
     return client
 
 
+def _grpc_tool_call(idx: str, tool_type: str, name: str, arguments: str) -> MagicMock:
+    # "name" is reserved by Mock's constructor (sets the mock's repr name),
+    # so the function's own name must be assigned as an attribute afterwards.
+    function = MagicMock(arguments=arguments)
+    function.name = name
+    return MagicMock(id=idx, type=tool_type, function=function)
+
+
 # ---------------------------------------------------------------------------
 # validate_provider_in_request
 # ---------------------------------------------------------------------------
 
 def test_validate_provider_success(llm_request):
-    LLMModelsClient.validate_provider_in_request(
+    LLMModelsClientGRPCHelper.validate_provider_in_request(
         request=llm_request,
         providers=["anthropic", "openai"],
     )
@@ -55,7 +67,7 @@ def test_validate_provider_failure(llm_request):
     llm_request.config.provider = "gemini"
 
     with pytest.raises(ValueError):
-        LLMModelsClient.validate_provider_in_request(
+        LLMModelsClientGRPCHelper.validate_provider_in_request(
             request=llm_request,
             providers=["anthropic", "openai"],
         )
@@ -66,7 +78,7 @@ def test_validate_provider_failure(llm_request):
 # ---------------------------------------------------------------------------
 
 def test_validate_provider_supports_model_success(llm_request):
-    LLMModelsClient.validate_provider_supports_model(
+    LLMModelsClientGRPCHelper.validate_provider_supports_model(
         request=llm_request,
         models=["claude-3-5-sonnet", "claude-3-7-sonnet"],
     )
@@ -74,7 +86,7 @@ def test_validate_provider_supports_model_success(llm_request):
 
 def test_validate_provider_supports_model_none(llm_request):
     with pytest.raises(ValueError):
-        LLMModelsClient.validate_provider_supports_model(
+        LLMModelsClientGRPCHelper.validate_provider_supports_model(
             request=llm_request,
             models=None,
         )
@@ -84,7 +96,7 @@ def test_validate_provider_supports_model_unknown_model(llm_request):
     llm_request.config.model = "claude-4"
 
     with pytest.raises(ValueError):
-        LLMModelsClient.validate_provider_supports_model(
+        LLMModelsClientGRPCHelper.validate_provider_supports_model(
             request=llm_request,
             models=["claude-3-5-sonnet"],
         )
@@ -135,20 +147,20 @@ def test_run_calls_validation(client, llm_request, monkeypatch):
         called["model"] = True
 
     monkeypatch.setattr(
-        LLMModelsClient,
+        client._grpc_helper,
         "validate_provider_in_request",
-        staticmethod(validate_provider),
+        validate_provider,
     )
 
     monkeypatch.setattr(
-        LLMModelsClient,
+        client._grpc_helper,
         "validate_provider_supports_model",
-        staticmethod(validate_model),
+        validate_model,
     )
 
     grpc_request = MagicMock()
     monkeypatch.setattr(
-        client,
+        client._grpc_helper,
         "build_grpc_request",
         lambda req: grpc_request,
     )
@@ -158,8 +170,8 @@ def test_run_calls_validation(client, llm_request, monkeypatch):
         model="claude-3-5-sonnet",
         provider="anthropic",
         finish_reason="stop",
-        usage=LLMTokenUsage(prompt_tokens=10, 
-                            completion_tokens=20, 
+        usage=LLMTokenUsage(prompt_tokens=10,
+                            completion_tokens=20,
                             total_tokens=30),
         tool_calls=[],
     )
@@ -180,7 +192,7 @@ def test_run_calls_stub(client, llm_request, monkeypatch):
     grpc_request = MagicMock()
 
     monkeypatch.setattr(
-        client,
+        client._grpc_helper,
         "build_grpc_request",
         lambda req: grpc_request,
     )
@@ -190,8 +202,8 @@ def test_run_calls_stub(client, llm_request, monkeypatch):
         model="claude",
         provider="anthropic",
         finish_reason="stop",
-        usage=LLMTokenUsage(prompt_tokens=10, 
-                          completion_tokens=20, 
+        usage=LLMTokenUsage(prompt_tokens=10,
+                          completion_tokens=20,
                           total_tokens=30),
         tool_calls=[],
     )
@@ -199,22 +211,25 @@ def test_run_calls_stub(client, llm_request, monkeypatch):
     client._stub = MagicMock()
     client._stub.Run.return_value = grpc_response
     client.run(llm_request)
-    client._stub.Run.assert_called_once_with(grpc_request)
+    client._stub.Run.assert_called_once_with(grpc_request, metadata=client.route_metadata)
 
 
 def test_run_returns_llm_response(client, llm_request, monkeypatch):
 
     monkeypatch.setattr(
-        client,
+        client._grpc_helper,
         "build_grpc_request",
         lambda req: MagicMock(),
     )
 
-    usage = LLMTokenUsage(prompt_tokens=10, 
-                          completion_tokens=20, 
+    usage = LLMTokenUsage(prompt_tokens=10,
+                          completion_tokens=20,
                           total_tokens=30)
-    tool_calls = [LLMToolCall(idx=uuid.uuid4().hex, tool_type="test_function",
-                              function=ToolCallFunction(name="Testfunction", arguments="a:1, b:2"))]
+
+    idx = uuid.uuid4().hex
+    grpc_tool_calls = [_grpc_tool_call(idx=idx, tool_type="test_function", name="Testfunction", arguments="a:1, b:2")]
+    expected_tool_calls = [LLMToolCall(idx=idx, tool_type="test_function",
+                                       function=ToolCallFunction(name="Testfunction", arguments="a:1, b:2"))]
 
     grpc_response = MagicMock(
         content="Hello world",
@@ -222,7 +237,7 @@ def test_run_returns_llm_response(client, llm_request, monkeypatch):
         provider="anthropic",
         finish_reason="stop",
         usage=usage,
-        tool_calls=tool_calls,
+        tool_calls=grpc_tool_calls,
     )
 
     client._stub = MagicMock()
@@ -235,7 +250,7 @@ def test_run_returns_llm_response(client, llm_request, monkeypatch):
     assert response.provider == "anthropic"
     assert response.finish_reason == "stop"
     assert response.token_usage == usage
-    assert response.tool_calls == tool_calls
+    assert response.tool_calls == expected_tool_calls
 
 
 
@@ -252,7 +267,7 @@ def test_run_builds_grpc_request(client, llm_request, monkeypatch):
         return grpc_request
 
     monkeypatch.setattr(
-        client,
+        client._grpc_helper,
         "build_grpc_request",
         build,
     )
@@ -262,8 +277,8 @@ def test_run_builds_grpc_request(client, llm_request, monkeypatch):
         model="",
         provider="",
         finish_reason="",
-        usage=LLMTokenUsage(prompt_tokens=10, 
-                          completion_tokens=20, 
+        usage=LLMTokenUsage(prompt_tokens=10,
+                          completion_tokens=20,
                           total_tokens=30),
         tool_calls=[],
     )

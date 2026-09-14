@@ -7,6 +7,7 @@ from gogi.clients.llm_models_client import LLMModelsClient
 from gogi.clients.llm_tools_client import LLMToolsClient
 from gogi.clients.prompts_client import PromptsClient
 from gogi.clients.llm_sessions_client import LLMSessionsClient
+from gogi.clients.workflow_client import WorkflowClient
 
 class Gogi:
     """
@@ -38,7 +39,7 @@ class Gogi:
         self._guardrails: Optional[GuardrailsClient] = None
         self._tools: Optional[LLMToolsClient] = None
         self._evaluation = None
-        self._workflows = None
+        self._workflows: Optional[WorkflowClient] = None
 
     @property
     def documents(self) -> DocumentsClient:
@@ -82,4 +83,10 @@ class Gogi:
         if not self._guardrails:
             self._guardrails = GuardrailsClient(platform=self, logger=self.logger)
         return self._guardrails
+
+    @property
+    def workflows(self) -> WorkflowClient:
+        if not self._workflows:
+            self._workflows = WorkflowClient(platform=self, logger=self.logger)
+        return self._workflows
 
