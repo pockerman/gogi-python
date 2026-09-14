@@ -1,6 +1,7 @@
 import os
 from typing import Optional
 from gogi.clients.documents_client import DocumentsClient
+from gogi.clients.guardrails_client import GuardrailsClient
 from gogi.clients.indexes_client import IndexesClient
 from gogi.clients.llm_models_client import LLMModelsClient
 from gogi.clients.llm_tools_client import LLMToolsClient
@@ -34,7 +35,7 @@ class Gogi:
         self._documents: Optional[DocumentsClient] = None
         self._llm_models: Optional[LLMModelsClient] = None
         self._prompts: Optional[PromptsClient] = None
-        self._guardrails = None
+        self._guardrails: Optional[GuardrailsClient] = None
         self._tools: Optional[LLMToolsClient] = None
         self._evaluation = None
         self._workflows = None
@@ -75,4 +76,10 @@ class Gogi:
         if not self._tools:
             self._tools = LLMToolsClient(platform=self, logger=self.logger)
         return self._tools
-    
+
+    @property
+    def guardrails(self) -> GuardrailsClient:
+        if not self._guardrails:
+            self._guardrails = GuardrailsClient(platform=self, logger=self.logger)
+        return self._guardrails
+
