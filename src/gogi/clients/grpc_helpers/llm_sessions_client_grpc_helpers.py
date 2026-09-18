@@ -164,7 +164,6 @@ class LLMSessionsClientGRPCHelper:
     def serialize_get_messages_grpc_response(
         grpc_response: llm_session_service_pb2.GetMessagesResponse,
     ) -> GetMessagesFromLLMSessionResponse:
-
         messages = []
         for msg in grpc_response.messages:
             tool_calls = [
@@ -205,7 +204,6 @@ class LLMSessionsClientGRPCHelper:
     def serialize_list_sessions_grpc_response(
         grpc_response: llm_session_service_pb2.ListSessionsResponse,
     ) -> ListLLMSessionsResponse:
-
         sessions = [
             LLMSession(
                 session_id=session.session_id,

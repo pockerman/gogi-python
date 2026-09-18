@@ -19,7 +19,6 @@ class IndexesClient(BaseClient):
         self._stub = index_service_pb2_grpc.IndexServiceStub(self._channel)
 
     def create_index(self, index_name: str, owner_name: str) -> GogiIndex:
-
         if self.logger:
             self.logger.debug(f"Creating index {index_name} with name: {owner_name}")
 
@@ -53,7 +52,6 @@ class IndexesClient(BaseClient):
         return self.proto_to_index(resp)
 
     def get_index(self, *, index_name: str | None = None, index_id: str | None = None) -> GogiIndex:
-
         if (index_id is None) == (index_name is None):
             raise ValueError("Specify exactly one of index_id or index_name")
 

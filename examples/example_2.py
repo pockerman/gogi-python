@@ -20,7 +20,7 @@ from gogi.utils.document_ingestion_polling import wait_for_document_ingest
 def create_temp_document(filename: str) -> bytes:
     """Helper function to create a temporary PDF file for testing document ingestion."""
 
-    file_content = """This is some dummy content for the PDF document. 
+    file_content = """This is some dummy content for the PDF document.
     It can be as long as needed to simulate a real document, and can include multiple paragraphs, sections, etc.
     Date: June 1, 2026
 

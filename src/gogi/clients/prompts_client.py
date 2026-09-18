@@ -28,7 +28,6 @@ class PromptsClient(BaseClient):
         return self._grpc_helper.serialize_prompt_register_grpc_response(grpc_response=grpc_response)
 
     def get_prompt(self, request: PromptGetRequest) -> PromptGetResponse:
-
         if request.prompt_id in self._prompts_cache:
             return self._prompts_cache.get(request.prompt_id)
 

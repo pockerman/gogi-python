@@ -113,7 +113,6 @@ class LLMModelsClientGRPCHelper:
 
     @staticmethod
     def grpc_token_usage_to_token_usage(grpc_usage: Any | None) -> LLMTokenUsage:
-
         if not grpc_usage:
             return LLMTokenUsage()
 
@@ -160,7 +159,6 @@ class LLMModelsClientGRPCHelper:
     def serialize_list_registered_llms_grpc_response(
         grpc_response: llm_model_service_pb2.ListRegisteredLLMsResponse,
     ) -> ListRegisteredLLMsResponse:
-
         models = [
             RegisteredLLM(
                 info=LLMModelInfo(

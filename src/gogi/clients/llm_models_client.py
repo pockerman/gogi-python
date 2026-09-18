@@ -49,7 +49,6 @@ class LLMModelsClient(BaseClient):
         return self._providers_to_model_cache[provider]
 
     def run(self, request: LLMRunRequest) -> LLMRunResponse:
-
         self._grpc_helper.validate_provider_in_request(request=request, providers=self.providers)
         self._grpc_helper.validate_provider_supports_model(
             request=request, models=self.provider_models(provider=request.config.provider)
@@ -113,7 +112,6 @@ class LLMModelsClient(BaseClient):
         return providers
 
     def register_llm(self, request: LLMRegisterRequest) -> LLMRegisterResponse:
-
         grpc_request = self._grpc_helper.build_grpc_registration_request(request)
         grpc_response = self._stub.RegisterLLM(grpc_request, metadata=self.route_metadata)
 

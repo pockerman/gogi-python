@@ -191,7 +191,6 @@ def test_run_calls_validation(client, llm_request, monkeypatch):
 
 
 def test_run_calls_stub(client, llm_request, monkeypatch):
-
     grpc_request = MagicMock()
 
     monkeypatch.setattr(
@@ -216,7 +215,6 @@ def test_run_calls_stub(client, llm_request, monkeypatch):
 
 
 def test_run_returns_llm_response(client, llm_request, monkeypatch):
-
     monkeypatch.setattr(
         client._grpc_helper,
         "build_grpc_request",
@@ -256,7 +254,6 @@ def test_run_returns_llm_response(client, llm_request, monkeypatch):
 
 
 def test_run_builds_grpc_request(client, llm_request, monkeypatch):
-
     called = False
 
     grpc_request = MagicMock()

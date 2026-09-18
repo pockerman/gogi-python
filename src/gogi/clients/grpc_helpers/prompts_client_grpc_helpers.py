@@ -23,7 +23,6 @@ class PromptsClientGRPCHelper:
     def build_register_prompt_grpc_request(
         request: PromptRegistrationRequest,
     ) -> prompt_service_pb2.PromptRegistrationRequest:
-
         return prompt_service_pb2.PromptRegistrationRequest(
             prompt_name=request.prompt_name,
             prompt_version=request.prompt_version,
@@ -51,7 +50,6 @@ class PromptsClientGRPCHelper:
     def serialize_prompt_register_grpc_response(
         grpc_response: prompt_service_pb2.PromptRegistrationResponse,
     ) -> PromptRegistrationResponse:
-
         return PromptRegistrationResponse(
             prompt_id=grpc_response.prompt_id,
             # registered_at=grpc_response.registered_at.ToDatetime(),
@@ -61,14 +59,12 @@ class PromptsClientGRPCHelper:
     def build_get_prompt_grpc_request(
         request: PromptGetRequest,
     ) -> prompt_service_pb2.PromptGetRequest:
-
         return prompt_service_pb2.PromptGetRequest(prompt_id=request.prompt_id)
 
     @staticmethod
     def serialize_get_prompt_grpc_response(
         grpc_response: prompt_service_pb2.PromptGetResponse,
     ) -> PromptGetResponse:
-
         return PromptGetResponse(
             prompt_id=grpc_response.prompt_id,
             prompt_name=grpc_response.prompt_name,
@@ -97,12 +93,10 @@ class PromptsClientGRPCHelper:
     def build_delete_prompt_grpc_request(
         request: PromptDeleteRequest,
     ) -> prompt_service_pb2.PromptDeleteRequest:
-
         return prompt_service_pb2.PromptDeleteRequest(prompt_id=request.prompt_id)
 
     @staticmethod
     def serialize_delete_prompt_grpc_response(
         grpc_response: prompt_service_pb2.PromptDeleteResponse,
     ) -> PromptDeleteResponse:
-
         return PromptDeleteResponse(deleted=grpc_response.deleted)

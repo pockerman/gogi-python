@@ -31,6 +31,13 @@ checks your pull request needs to pass, and the commit message format we enforce
   uv run python scripts/build_protos.py
   ```
 
+- Install the [pre-commit](https://pre-commit.com/) hooks (runs lint/format checks on staged files
+  and validates your commit message on every commit):
+
+  ```
+  uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
+  ```
+
 ## Before opening a pull request
 
 CI runs three checks on every pull request; run them locally first so review isn't blocked on
@@ -62,9 +69,10 @@ fix(clients): handle missing provider in run_stream
 docs: update installation instructions
 ```
 
-Merge commits are exempt. A `Conventional Commits` GitHub Action checks every commit on a pull
-request and fails the build if any commit message doesn't conform — fix commit messages (e.g. via
-`git commit --amend` or an interactive rebase) before requesting review.
+Merge commits are exempt. If the pre-commit hooks are installed, a non-conforming commit message
+is rejected locally before it's even created. A `Conventional Commits` GitHub Action also checks
+every commit on a pull request and fails the build if any commit message doesn't conform — fix
+commit messages (e.g. via `git commit --amend` or an interactive rebase) before requesting review.
 
 ## Pull requests
 
