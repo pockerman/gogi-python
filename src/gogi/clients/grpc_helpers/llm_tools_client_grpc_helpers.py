@@ -5,24 +5,51 @@ from gogi.models.llm.llm_tool_service_definition import (
     LLMToolBehavior,
     LLMToolServiceDefinition,
 )
-from gogi.models.llm.requests.llm_tools.llm_discover_tools_request import LLMDiscoverToolsRequest
-from gogi.models.llm.requests.llm_tools.llm_execute_tool_request import LLMExecuteToolRequest
+from gogi.models.llm.requests.llm_tools.llm_discover_tools_request import (
+    LLMDiscoverToolsRequest,
+)
+from gogi.models.llm.requests.llm_tools.llm_execute_tool_request import (
+    LLMExecuteToolRequest,
+)
 from gogi.models.llm.requests.llm_tools.llm_get_task_request import LLMGetTaskRequest
-from gogi.models.llm.requests.llm_tools.llm_register_mcp_server_request import LLMRegisterMcpServerRequest
-from gogi.models.llm.requests.llm_tools.llm_register_tool_request import LLMRegisterToolRequest
-from gogi.models.llm.requests.llm_tools.llm_validate_tool_request import LLMValidateToolRequest
-from gogi.models.llm.responses.llm_tools.llm_discover_tools_response import LLMDiscoverToolsResponse
-from gogi.models.llm.responses.llm_tools.llm_execute_tool_async_response import LLMExecuteToolAsyncResponse
-from gogi.models.llm.responses.llm_tools.llm_execute_tool_response import LLMExecuteToolResponse
+from gogi.models.llm.requests.llm_tools.llm_register_mcp_server_request import (
+    LLMRegisterMcpServerRequest,
+)
+from gogi.models.llm.requests.llm_tools.llm_register_tool_request import (
+    LLMRegisterToolRequest,
+)
+from gogi.models.llm.requests.llm_tools.llm_validate_tool_request import (
+    LLMValidateToolRequest,
+)
+from gogi.models.llm.responses.llm_tools.llm_discover_tools_response import (
+    LLMDiscoverToolsResponse,
+)
+from gogi.models.llm.responses.llm_tools.llm_execute_tool_async_response import (
+    LLMExecuteToolAsyncResponse,
+)
+from gogi.models.llm.responses.llm_tools.llm_execute_tool_response import (
+    LLMExecuteToolResponse,
+)
 from gogi.models.llm.responses.llm_tools.llm_get_task_response import LLMGetTaskResponse
-from gogi.models.llm.responses.llm_tools.llm_register_mcp_server_response import LLMRegisterMcpServerResponse
-from gogi.models.llm.responses.llm_tools.llm_register_tool_response import LLMRegisterToolResponse
-from gogi.models.llm.responses.llm_tools.llm_validate_tool_response import LLMValidateToolResponse
-from gogi.v1 import cost_metadata_pb2, execution_limits_pb2, llm_tool_pb2, llm_tool_service_pb2, rate_limits_pb2
+from gogi.models.llm.responses.llm_tools.llm_register_mcp_server_response import (
+    LLMRegisterMcpServerResponse,
+)
+from gogi.models.llm.responses.llm_tools.llm_register_tool_response import (
+    LLMRegisterToolResponse,
+)
+from gogi.models.llm.responses.llm_tools.llm_validate_tool_response import (
+    LLMValidateToolResponse,
+)
+from gogi.v1 import (
+    cost_metadata_pb2,
+    execution_limits_pb2,
+    llm_tool_pb2,
+    llm_tool_service_pb2,
+    rate_limits_pb2,
+)
 
 
 class LLMToolsClientGRPCHelper:
-
     @staticmethod
     def tool_behavior_to_grpc(behavior: LLMToolBehavior) -> llm_tool_pb2.ToolBehavior:
         return llm_tool_pb2.ToolBehavior(
@@ -110,7 +137,9 @@ class LLMToolsClientGRPCHelper:
             tags=tool.tags,
             endpoint=tool.endpoint,
             credential_ref=tool.credential_ref,
-            execution_limits=LLMToolsClientGRPCHelper.execution_limits_to_grpc(tool.execution_limits) if tool.execution_limits else None,
+            execution_limits=LLMToolsClientGRPCHelper.execution_limits_to_grpc(tool.execution_limits)
+            if tool.execution_limits
+            else None,
             mcp_server_url=tool.mcp_server_url,
         )
 
@@ -123,15 +152,21 @@ class LLMToolsClientGRPCHelper:
             description=tool.description,
             parameters_json=tool.parameters_json,
             returns_json=tool.returns_json,
-            behavior=LLMToolsClientGRPCHelper.tool_behavior_from_grpc(tool.behavior) if tool.HasField("behavior") else None,
-            rate_limits=LLMToolsClientGRPCHelper.rate_limits_from_grpc(tool.rate_limits) if tool.HasField("rate_limits") else None,
+            behavior=LLMToolsClientGRPCHelper.tool_behavior_from_grpc(tool.behavior)
+            if tool.HasField("behavior")
+            else None,
+            rate_limits=LLMToolsClientGRPCHelper.rate_limits_from_grpc(tool.rate_limits)
+            if tool.HasField("rate_limits")
+            else None,
             cost=LLMToolsClientGRPCHelper.cost_metadata_from_grpc(tool.cost) if tool.HasField("cost") else None,
             required_permissions=list(tool.required_permissions),
             capabilities=list(tool.capabilities),
             tags=list(tool.tags),
             endpoint=tool.endpoint,
             credential_ref=tool.credential_ref,
-            execution_limits=LLMToolsClientGRPCHelper.execution_limits_from_grpc(tool.execution_limits) if tool.HasField("execution_limits") else None,
+            execution_limits=LLMToolsClientGRPCHelper.execution_limits_from_grpc(tool.execution_limits)
+            if tool.HasField("execution_limits")
+            else None,
             mcp_server_url=tool.mcp_server_url,
         )
 
@@ -144,7 +179,9 @@ class LLMToolsClientGRPCHelper:
         )
 
     @staticmethod
-    def serialize_register_tool_grpc_response(grpc_response: llm_tool_service_pb2.RegisterToolResponse) -> LLMRegisterToolResponse:
+    def serialize_register_tool_grpc_response(
+        grpc_response: llm_tool_service_pb2.RegisterToolResponse,
+    ) -> LLMRegisterToolResponse:
         return LLMRegisterToolResponse(
             name=grpc_response.name,
             version=grpc_response.version,
@@ -154,7 +191,9 @@ class LLMToolsClientGRPCHelper:
     # --- DiscoverTools ---
 
     @staticmethod
-    def build_grpc_discover_tools_request(request: LLMDiscoverToolsRequest) -> llm_tool_service_pb2.DiscoverToolsRequest:
+    def build_grpc_discover_tools_request(
+        request: LLMDiscoverToolsRequest,
+    ) -> llm_tool_service_pb2.DiscoverToolsRequest:
         return llm_tool_service_pb2.DiscoverToolsRequest(
             namespace=request.namespace,
             capabilities=request.capabilities,
@@ -164,7 +203,9 @@ class LLMToolsClientGRPCHelper:
         )
 
     @staticmethod
-    def serialize_discover_tools_grpc_response(grpc_response: llm_tool_service_pb2.DiscoverToolsResponse) -> LLMDiscoverToolsResponse:
+    def serialize_discover_tools_grpc_response(
+        grpc_response: llm_tool_service_pb2.DiscoverToolsResponse,
+    ) -> LLMDiscoverToolsResponse:
         return LLMDiscoverToolsResponse(
             tools=[LLMToolsClientGRPCHelper.tool_definition_from_grpc(tool) for tool in grpc_response.tools],
             relevance_scores=dict(grpc_response.relevance_scores),
@@ -181,7 +222,9 @@ class LLMToolsClientGRPCHelper:
         )
 
     @staticmethod
-    def serialize_execute_tool_grpc_response(grpc_response: llm_tool_service_pb2.ExecuteToolResponse) -> LLMExecuteToolResponse:
+    def serialize_execute_tool_grpc_response(
+        grpc_response: llm_tool_service_pb2.ExecuteToolResponse,
+    ) -> LLMExecuteToolResponse:
         return LLMExecuteToolResponse(
             success=grpc_response.success,
             result_json=grpc_response.result_json,
@@ -199,7 +242,9 @@ class LLMToolsClientGRPCHelper:
         )
 
     @staticmethod
-    def serialize_validate_tool_grpc_response(grpc_response: llm_tool_service_pb2.ValidateToolResponse) -> LLMValidateToolResponse:
+    def serialize_validate_tool_grpc_response(
+        grpc_response: llm_tool_service_pb2.ValidateToolResponse,
+    ) -> LLMValidateToolResponse:
         return LLMValidateToolResponse(
             valid=grpc_response.valid,
             errors=list(grpc_response.errors),
@@ -208,11 +253,15 @@ class LLMToolsClientGRPCHelper:
     # --- ExecuteToolAsync / GetTask ---
 
     @staticmethod
-    def build_grpc_execute_tool_async_request(request: LLMExecuteToolRequest) -> llm_tool_service_pb2.ExecuteToolRequest:
+    def build_grpc_execute_tool_async_request(
+        request: LLMExecuteToolRequest,
+    ) -> llm_tool_service_pb2.ExecuteToolRequest:
         return LLMToolsClientGRPCHelper.build_grpc_execute_tool_request(request)
 
     @staticmethod
-    def serialize_execute_tool_async_grpc_response(grpc_response: llm_tool_service_pb2.ExecuteToolAsyncResponse) -> LLMExecuteToolAsyncResponse:
+    def serialize_execute_tool_async_grpc_response(
+        grpc_response: llm_tool_service_pb2.ExecuteToolAsyncResponse,
+    ) -> LLMExecuteToolAsyncResponse:
         return LLMExecuteToolAsyncResponse(
             task_id=grpc_response.task_id,
             status=grpc_response.status,
@@ -234,17 +283,25 @@ class LLMToolsClientGRPCHelper:
     # --- RegisterMcpServer ---
 
     @staticmethod
-    def build_grpc_register_mcp_server_request(request: LLMRegisterMcpServerRequest) -> llm_tool_service_pb2.RegisterMcpServerRequest:
+    def build_grpc_register_mcp_server_request(
+        request: LLMRegisterMcpServerRequest,
+    ) -> llm_tool_service_pb2.RegisterMcpServerRequest:
         return llm_tool_service_pb2.RegisterMcpServerRequest(
             server_url=request.server_url,
             namespace=request.namespace,
             credential_ref=request.credential_ref,
-            policy_overrides=LLMToolsClientGRPCHelper.tool_behavior_to_grpc(request.policy_overrides) if request.policy_overrides else None,
-            rate_limit_overrides=LLMToolsClientGRPCHelper.rate_limits_to_grpc(request.rate_limit_overrides) if request.rate_limit_overrides else None,
+            policy_overrides=LLMToolsClientGRPCHelper.tool_behavior_to_grpc(request.policy_overrides)
+            if request.policy_overrides
+            else None,
+            rate_limit_overrides=LLMToolsClientGRPCHelper.rate_limits_to_grpc(request.rate_limit_overrides)
+            if request.rate_limit_overrides
+            else None,
         )
 
     @staticmethod
-    def serialize_register_mcp_server_grpc_response(grpc_response: llm_tool_service_pb2.RegisterMcpServerResponse) -> LLMRegisterMcpServerResponse:
+    def serialize_register_mcp_server_grpc_response(
+        grpc_response: llm_tool_service_pb2.RegisterMcpServerResponse,
+    ) -> LLMRegisterMcpServerResponse:
         return LLMRegisterMcpServerResponse(
             imported_tool_names=list(grpc_response.imported_tool_names),
         )

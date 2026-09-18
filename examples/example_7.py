@@ -9,19 +9,18 @@ The client allows users to:
 
 """
 
-
 from loguru import logger
 from rich import print as rich_print
 
+from gogi.gogi import Gogi
 from gogi.models.guardrails.requests.check_policy_request import CheckPolicyRequest
 from gogi.models.guardrails.requests.filter_output_request import FilterOutputRequest
-from gogi.models.guardrails.requests.report_violation_request import ReportViolationRequest
+from gogi.models.guardrails.requests.report_violation_request import (
+    ReportViolationRequest,
+)
 from gogi.models.guardrails.requests.validate_input_request import ValidateInputRequest
 
-from gogi.gogi import Gogi
-
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     # connect to the Gogi platform.
     # This will be the first step in any interaction with the platform, and will
     # give you access to all the available clients (indexes, documents, and queries).

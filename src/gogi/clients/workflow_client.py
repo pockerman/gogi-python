@@ -1,42 +1,68 @@
+from gogi.clients.base_client import BaseClient
+from gogi.clients.grpc_helpers.workflow_client_grpc_helpers import (
+    WorkflowClientGRPCHelper,
+)
 from gogi.models.workflow.requests.cancel_job_request import CancelJobRequest
 from gogi.models.workflow.requests.complete_job_request import CompleteJobRequest
 from gogi.models.workflow.requests.create_job_request import CreateJobRequest
 from gogi.models.workflow.requests.delete_workflow_request import DeleteWorkflowRequest
 from gogi.models.workflow.requests.deploy_workflow_request import DeployWorkflowRequest
 from gogi.models.workflow.requests.fail_job_request import FailJobRequest
-from gogi.models.workflow.requests.get_deployment_status_request import GetDeploymentStatusRequest
+from gogi.models.workflow.requests.get_deployment_status_request import (
+    GetDeploymentStatusRequest,
+)
 from gogi.models.workflow.requests.get_job_status_request import GetJobStatusRequest
 from gogi.models.workflow.requests.get_workflow_request import GetWorkflowRequest
 from gogi.models.workflow.requests.list_routes_request import ListRoutesRequest
 from gogi.models.workflow.requests.list_workflows_request import ListWorkflowsRequest
 from gogi.models.workflow.requests.register_route_request import RegisterRouteRequest
-from gogi.models.workflow.requests.register_workflow_request import RegisterWorkflowRequest
-from gogi.models.workflow.requests.rollback_workflow_request import RollbackWorkflowRequest
-from gogi.models.workflow.requests.save_job_checkpoint_request import SaveJobCheckpointRequest
-from gogi.models.workflow.requests.update_job_progress_request import UpdateJobProgressRequest
+from gogi.models.workflow.requests.register_workflow_request import (
+    RegisterWorkflowRequest,
+)
+from gogi.models.workflow.requests.rollback_workflow_request import (
+    RollbackWorkflowRequest,
+)
+from gogi.models.workflow.requests.save_job_checkpoint_request import (
+    SaveJobCheckpointRequest,
+)
+from gogi.models.workflow.requests.update_job_progress_request import (
+    UpdateJobProgressRequest,
+)
 from gogi.models.workflow.requests.update_workflow_request import UpdateWorkflowRequest
-
 from gogi.models.workflow.responses.cancel_job_response import CancelJobResponse
 from gogi.models.workflow.responses.complete_job_response import CompleteJobResponse
 from gogi.models.workflow.responses.create_job_response import CreateJobResponse
-from gogi.models.workflow.responses.delete_workflow_response import DeleteWorkflowResponse
-from gogi.models.workflow.responses.deploy_workflow_response import DeployWorkflowResponse
+from gogi.models.workflow.responses.delete_workflow_response import (
+    DeleteWorkflowResponse,
+)
+from gogi.models.workflow.responses.deploy_workflow_response import (
+    DeployWorkflowResponse,
+)
 from gogi.models.workflow.responses.fail_job_response import FailJobResponse
-from gogi.models.workflow.responses.get_deployment_status_response import GetDeploymentStatusResponse
+from gogi.models.workflow.responses.get_deployment_status_response import (
+    GetDeploymentStatusResponse,
+)
 from gogi.models.workflow.responses.get_job_status_response import GetJobStatusResponse
 from gogi.models.workflow.responses.get_workflow_response import GetWorkflowResponse
 from gogi.models.workflow.responses.list_routes_response import ListRoutesResponse
 from gogi.models.workflow.responses.list_workflows_response import ListWorkflowsResponse
 from gogi.models.workflow.responses.register_route_response import RegisterRouteResponse
-from gogi.models.workflow.responses.register_workflow_response import RegisterWorkflowResponse
-from gogi.models.workflow.responses.rollback_workflow_response import RollbackWorkflowResponse
-from gogi.models.workflow.responses.save_job_checkpoint_response import SaveJobCheckpointResponse
-from gogi.models.workflow.responses.update_job_progress_response import UpdateJobProgressResponse
-from gogi.models.workflow.responses.update_workflow_response import UpdateWorkflowResponse
-
+from gogi.models.workflow.responses.register_workflow_response import (
+    RegisterWorkflowResponse,
+)
+from gogi.models.workflow.responses.rollback_workflow_response import (
+    RollbackWorkflowResponse,
+)
+from gogi.models.workflow.responses.save_job_checkpoint_response import (
+    SaveJobCheckpointResponse,
+)
+from gogi.models.workflow.responses.update_job_progress_response import (
+    UpdateJobProgressResponse,
+)
+from gogi.models.workflow.responses.update_workflow_response import (
+    UpdateWorkflowResponse,
+)
 from gogi.v1 import workflow_service_pb2_grpc
-from gogi.clients.base_client import BaseClient
-from gogi.clients.grpc_helpers.workflow_client_grpc_helpers import WorkflowClientGRPCHelper
 
 
 class WorkflowClient(BaseClient):

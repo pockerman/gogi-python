@@ -1,29 +1,42 @@
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
+from gogi.clients.grpc_helpers.workflow_client_grpc_helpers import (
+    WorkflowClientGRPCHelper,
+)
 from gogi.clients.workflow_client import WorkflowClient
-from gogi.clients.grpc_helpers.workflow_client_grpc_helpers import WorkflowClientGRPCHelper
+from gogi.models.workflow.reliability_config import ReliabilityConfig
 from gogi.models.workflow.requests.cancel_job_request import CancelJobRequest
 from gogi.models.workflow.requests.complete_job_request import CompleteJobRequest
 from gogi.models.workflow.requests.create_job_request import CreateJobRequest
 from gogi.models.workflow.requests.delete_workflow_request import DeleteWorkflowRequest
 from gogi.models.workflow.requests.deploy_workflow_request import DeployWorkflowRequest
 from gogi.models.workflow.requests.fail_job_request import FailJobRequest
-from gogi.models.workflow.requests.get_deployment_status_request import GetDeploymentStatusRequest
+from gogi.models.workflow.requests.get_deployment_status_request import (
+    GetDeploymentStatusRequest,
+)
 from gogi.models.workflow.requests.get_job_status_request import GetJobStatusRequest
 from gogi.models.workflow.requests.get_workflow_request import GetWorkflowRequest
 from gogi.models.workflow.requests.list_routes_request import ListRoutesRequest
 from gogi.models.workflow.requests.list_workflows_request import ListWorkflowsRequest
 from gogi.models.workflow.requests.register_route_request import RegisterRouteRequest
-from gogi.models.workflow.requests.register_workflow_request import RegisterWorkflowRequest
-from gogi.models.workflow.requests.rollback_workflow_request import RollbackWorkflowRequest
-from gogi.models.workflow.requests.save_job_checkpoint_request import SaveJobCheckpointRequest
-from gogi.models.workflow.requests.update_job_progress_request import UpdateJobProgressRequest
+from gogi.models.workflow.requests.register_workflow_request import (
+    RegisterWorkflowRequest,
+)
+from gogi.models.workflow.requests.rollback_workflow_request import (
+    RollbackWorkflowRequest,
+)
+from gogi.models.workflow.requests.save_job_checkpoint_request import (
+    SaveJobCheckpointRequest,
+)
+from gogi.models.workflow.requests.update_job_progress_request import (
+    UpdateJobProgressRequest,
+)
 from gogi.models.workflow.requests.update_workflow_request import UpdateWorkflowRequest
-from gogi.models.workflow.workflow_spec import WorkflowSpec
-from gogi.models.workflow.scaling_config import ScalingConfig
 from gogi.models.workflow.resource_config import ResourceConfig
-from gogi.models.workflow.reliability_config import ReliabilityConfig
+from gogi.models.workflow.scaling_config import ScalingConfig
+from gogi.models.workflow.workflow_spec import WorkflowSpec
 
 
 @pytest.fixture
@@ -37,16 +50,16 @@ def client():
 
 
 def _grpc_spec(**overrides):
-    defaults = dict(
-        name="wf-1",
-        api_path="/wf-1",
-        container_image="img:latest",
-        response_mode="sync",
-        scaling=MagicMock(min_replicas=1, max_replicas=3, target_cpu_percent=80),
-        resources=MagicMock(cpu="500m", memory="512Mi", gpu_type="", num_gpus=0),
-        reliability=MagicMock(timeout_seconds=30, max_retries=2),
-        version=1,
-    )
+    defaults = {
+        "name": "wf-1",
+        "api_path": "/wf-1",
+        "container_image": "img:latest",
+        "response_mode": "sync",
+        "scaling": MagicMock(min_replicas=1, max_replicas=3, target_cpu_percent=80),
+        "resources": MagicMock(cpu="500m", memory="512Mi", gpu_type="", num_gpus=0),
+        "reliability": MagicMock(timeout_seconds=30, max_retries=2),
+        "version": 1,
+    }
     defaults.update(overrides)
     # "name" is reserved by Mock's constructor (sets the mock's repr name),
     # so it must be assigned as an attribute afterwards instead.
@@ -59,6 +72,7 @@ def _grpc_spec(**overrides):
 # ---------------------------------------------------------------------------
 # registry
 # ---------------------------------------------------------------------------
+
 
 def test_register_workflow_calls_stub(client):
     grpc_response = MagicMock(workflow_id="wf-1", version=1)
@@ -136,10 +150,16 @@ def test_delete_workflow_calls_stub(client):
 # deployment
 # ---------------------------------------------------------------------------
 
+
 def test_deploy_workflow_calls_stub(client):
     grpc_deployment = MagicMock(
-        workflow_id="wf-1", deployment_id="dep-1", version=1, status="healthy",
-        current_replicas=1, desired_replicas=1, healthy_endpoints=["http://localhost:8080"],
+        workflow_id="wf-1",
+        deployment_id="dep-1",
+        version=1,
+        status="healthy",
+        current_replicas=1,
+        desired_replicas=1,
+        healthy_endpoints=["http://localhost:8080"],
     )
     grpc_response = MagicMock(deployment=grpc_deployment)
     client._stub.DeployWorkflow.return_value = grpc_response
@@ -158,8 +178,13 @@ def test_deploy_workflow_calls_stub(client):
 
 def test_get_deployment_status_calls_stub(client):
     grpc_deployment = MagicMock(
-        workflow_id="wf-1", deployment_id="dep-1", version=1, status="deploying",
-        current_replicas=0, desired_replicas=1, healthy_endpoints=[],
+        workflow_id="wf-1",
+        deployment_id="dep-1",
+        version=1,
+        status="deploying",
+        current_replicas=0,
+        desired_replicas=1,
+        healthy_endpoints=[],
     )
     grpc_response = MagicMock(deployment=grpc_deployment)
     client._stub.GetDeploymentStatus.return_value = grpc_response
@@ -172,8 +197,13 @@ def test_get_deployment_status_calls_stub(client):
 
 def test_rollback_workflow_calls_stub(client):
     grpc_deployment = MagicMock(
-        workflow_id="wf-1", deployment_id="dep-1", version=1, status="healthy",
-        current_replicas=1, desired_replicas=1, healthy_endpoints=[],
+        workflow_id="wf-1",
+        deployment_id="dep-1",
+        version=1,
+        status="healthy",
+        current_replicas=1,
+        desired_replicas=1,
+        healthy_endpoints=[],
     )
     grpc_response = MagicMock(deployment=grpc_deployment)
     client._stub.RollbackWorkflow.return_value = grpc_response
@@ -190,6 +220,7 @@ def test_rollback_workflow_calls_stub(client):
 # ---------------------------------------------------------------------------
 # routing
 # ---------------------------------------------------------------------------
+
 
 def test_register_route_calls_stub(client):
     grpc_response = MagicMock(success=True)
@@ -218,6 +249,7 @@ def test_list_routes_calls_stub(client):
 # async jobs
 # ---------------------------------------------------------------------------
 
+
 def test_create_job_calls_stub(client):
     grpc_response = MagicMock(job_id="job-1")
     client._stub.CreateJob.return_value = grpc_response
@@ -233,9 +265,17 @@ def test_create_job_calls_stub(client):
 
 def test_get_job_status_calls_stub(client):
     grpc_job = MagicMock(
-        job_id="job-1", workflow_id="wf-1", status="running", progress_message="halfway",
-        input_json="{}", result_json="", error="", checkpoint_json="", assigned_endpoint="",
-        created_at=1, updated_at=2,
+        job_id="job-1",
+        workflow_id="wf-1",
+        status="running",
+        progress_message="halfway",
+        input_json="{}",
+        result_json="",
+        error="",
+        checkpoint_json="",
+        assigned_endpoint="",
+        created_at=1,
+        updated_at=2,
     )
     grpc_response = MagicMock(job=grpc_job)
     client._stub.GetJobStatus.return_value = grpc_response

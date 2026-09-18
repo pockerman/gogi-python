@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from pydantic import BaseModel
 
 
@@ -8,7 +6,7 @@ class LLMToolBehavior(BaseModel):
     is_idempotent: bool = False
     requires_confirmation: bool = False
     typical_latency_ms: int = 0
-    side_effects: List[str] = []
+    side_effects: list[str] = []
 
 
 class LLMRateLimits(BaseModel):
@@ -37,13 +35,13 @@ class LLMToolServiceDefinition(BaseModel):
     description: str = ""
     parameters_json: str = ""
     returns_json: str = ""
-    behavior: Optional[LLMToolBehavior] = None
-    rate_limits: Optional[LLMRateLimits] = None
-    cost: Optional[LLMCostMetadata] = None
-    required_permissions: List[str] = []
-    capabilities: List[str] = []
-    tags: List[str] = []
+    behavior: LLMToolBehavior | None = None
+    rate_limits: LLMRateLimits | None = None
+    cost: LLMCostMetadata | None = None
+    required_permissions: list[str] = []
+    capabilities: list[str] = []
+    tags: list[str] = []
     endpoint: str = ""
     credential_ref: str = ""
-    execution_limits: Optional[LLMExecutionLimits] = None
+    execution_limits: LLMExecutionLimits | None = None
     mcp_server_url: str = ""

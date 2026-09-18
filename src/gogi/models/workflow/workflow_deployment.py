@@ -1,5 +1,3 @@
-from typing import List
-
 from pydantic import BaseModel
 
 
@@ -10,4 +8,4 @@ class WorkflowDeployment(BaseModel):
     status: str = ""
     current_replicas: int = 0
     desired_replicas: int = 0
-    healthy_endpoints: List[str] = []
+    healthy_endpoints: list[str] = []

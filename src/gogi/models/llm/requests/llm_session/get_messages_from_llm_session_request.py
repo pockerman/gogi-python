@@ -1,8 +1,8 @@
 from pydantic import BaseModel
-from typing import Optional
+
 
 class GetMessagesFromLLMSessionRequest(BaseModel):
     session_id: str
-    limit: Optional[int] = None
-    offset: Optional[int] = None
-    strategy: Optional[str] = None
+    limit: int | None = None
+    offset: int | None = None
+    strategy: str | None = None

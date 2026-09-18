@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import Optional, Dict
 
 
 class IndexConfig(BaseModel):
@@ -11,4 +10,4 @@ class IndexConfig(BaseModel):
     chunking_strategy: str
     chunk_size: int
     chunk_overlap: int
-    metadata_schema: Optional[Dict] | None = None
+    metadata_schema: dict | None = None

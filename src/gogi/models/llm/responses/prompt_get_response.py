@@ -1,5 +1,4 @@
-from pydantic import BaseModel 
-
+from pydantic import BaseModel
 
 from gogi.models.prompts.prompt_metadata import PromptMetadata
 

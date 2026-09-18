@@ -1,5 +1,6 @@
-import grpc
 import os
+
+import grpc
 
 from gogi.utils.retry_interceptor import RetryInterceptor
 
@@ -22,7 +23,6 @@ def _use_insecure_channel(gateway_url: str) -> bool:
 
 
 class BaseClient:
-
     def __init__(self, platform, service_name: str, logger=None):
         self.platform = platform
         self.service_name = service_name

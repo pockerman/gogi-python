@@ -1,5 +1,5 @@
 """This example illustrates the LLMModelClient in gogi.
-The client allows users to 
+The client allows users to
 
 - Provide access to LLM providers e.g. Anthropic, OpenAI
 - Allow the user query the model capabilities
@@ -9,27 +9,25 @@ The client allows users to
 """
 
 from loguru import logger
-
-
-from gogi.models.llm.requests.list_llms_request import ListLLMsRequest
-from gogi.models.llm.requests.llm_capabilities_request import GetLLMCapabilitiesRequest
 from rich import print as rich_print
 
 from gogi.gogi import Gogi
-from gogi.models import (LLMRunRequest, 
-                          LLMRunRequestConfig, 
-                          LLMessage, LLMRegisterRequest, 
-                          LLMModelInfo, LLMCapabilities,
-                          ListRegisteredLLMsRequest, GetLLMStatusRequest)
+from gogi.models import (
+    GetLLMStatusRequest,
+    ListRegisteredLLMsRequest,
+    LLMCapabilities,
+    LLMessage,
+    LLMModelInfo,
+    LLMRegisterRequest,
+    LLMRunRequest,
+    LLMRunRequestConfig,
+)
+from gogi.models.llm.requests.list_llms_request import ListLLMsRequest
+from gogi.models.llm.requests.llm_capabilities_request import GetLLMCapabilitiesRequest
 
-
-
-
-if __name__ == '__main__':
-
-
-    # connect to the Gogi platform. 
-    # This will be the first step in any interaction with the platform, and will 
+if __name__ == "__main__":
+    # connect to the Gogi platform.
+    # This will be the first step in any interaction with the platform, and will
     # give you access to all of the available clients (indexes, documents, and queries).
     platform = Gogi(gateway_url="localhost:50051", logger=logger)
 
@@ -52,22 +50,27 @@ if __name__ == '__main__':
 
     # # we can also stream the model response
     llm_stream_request = platform.llm_clients.run_stream(llm_run_request)
-    
+
     for chunk in llm_stream_request:
         rich_print(chunk.token, end="", flush=True)
 
-
     # # We can add a new model
-    new_model_registration = LLMRegisterRequest(info=LLMModelInfo(name="my-model", provider="ollama",
-                                                                  capabilities=LLMCapabilities(context_window=5000,
-                                                                                               supports_json_mode=False,
-                                                                                               supports_streaming=False,
-                                                                                               supports_tools=True,
-                                                                                               supports_vision=False)),
-                                                endpoint="http://localhost:5000",
-                                                health_check="http://localhost:5000/health",
-                                                adapter_type=""
-                                            )
+    new_model_registration = LLMRegisterRequest(
+        info=LLMModelInfo(
+            name="my-model",
+            provider="ollama",
+            capabilities=LLMCapabilities(
+                context_window=5000,
+                supports_json_mode=False,
+                supports_streaming=False,
+                supports_tools=True,
+                supports_vision=False,
+            ),
+        ),
+        endpoint="http://localhost:5000",
+        health_check="http://localhost:5000/health",
+        adapter_type="",
+    )
     registration_response = platform.llm_clients.register_llm(new_model_registration)
     rich_print(f"Model registration response {registration_response}")
 
@@ -85,6 +88,3 @@ if __name__ == '__main__':
 
     query_response = platform.llm_clients.list_llms(ListLLMsRequest())
     rich_print(f"List LLMs response {query_response}")
-
-
-

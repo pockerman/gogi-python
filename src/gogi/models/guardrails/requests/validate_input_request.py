@@ -1,9 +1,7 @@
-from typing import Dict, List
-
 from pydantic import BaseModel
 
 
 class ValidateInputRequest(BaseModel):
     content: str = ""
-    checks: List[str] = []
-    context: Dict[str, str] = {}
+    checks: list[str] = []
+    context: dict[str, str] = {}

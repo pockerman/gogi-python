@@ -25,8 +25,9 @@ Example:
         ...
 """
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Dict
+from typing import Any
 
 VALID_RESPONSE_MODES = {"sync", "stream", "async"}
 
@@ -74,17 +75,14 @@ def workflow(
         ValueError: ``response_mode`` is not one of sync / stream / async.
     """
     if response_mode not in VALID_RESPONSE_MODES:
-        raise ValueError(
-            f"Invalid response_mode {response_mode!r}; "
-            f"must be one of {sorted(VALID_RESPONSE_MODES)}"
-        )
+        raise ValueError(f"Invalid response_mode {response_mode!r}; must be one of {sorted(VALID_RESPONSE_MODES)}")
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             return func(*args, **kwargs)
 
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "name": name,
             "api_path": api_path,
             "response_mode": response_mode,
