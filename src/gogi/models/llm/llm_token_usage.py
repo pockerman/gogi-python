@@ -1,8 +1,7 @@
 from pydantic import BaseModel
 
-from typing import Optional
 
 class LLMTokenUsage(BaseModel):
-    prompt_tokens: Optional[int] = None
-    completion_tokens: Optional[int] = None  
-    total_tokens: Optional[int] = None 
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    total_tokens: int | None = None

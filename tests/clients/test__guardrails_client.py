@@ -1,11 +1,16 @@
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
+from gogi.clients.grpc_helpers.guardrails_client_grpc_helpers import (
+    GuardrailsClientGRPCHelper,
+)
 from gogi.clients.guardrails_client import GuardrailsClient
-from gogi.clients.grpc_helpers.guardrails_client_grpc_helpers import GuardrailsClientGRPCHelper
 from gogi.models.guardrails.requests.check_policy_request import CheckPolicyRequest
 from gogi.models.guardrails.requests.filter_output_request import FilterOutputRequest
-from gogi.models.guardrails.requests.report_violation_request import ReportViolationRequest
+from gogi.models.guardrails.requests.report_violation_request import (
+    ReportViolationRequest,
+)
 from gogi.models.guardrails.requests.validate_input_request import ValidateInputRequest
 
 
@@ -22,6 +27,7 @@ def client():
 # ---------------------------------------------------------------------------
 # validate_input
 # ---------------------------------------------------------------------------
+
 
 def test_validate_input_calls_stub(client):
     grpc_response = MagicMock(allowed=True, denial_reason="", triggered_checks=["pii"])
@@ -53,6 +59,7 @@ def test_validate_input_denied(client):
 # filter_output
 # ---------------------------------------------------------------------------
 
+
 def test_filter_output_calls_stub(client):
     grpc_response = MagicMock(content="redacted", modified=True, applied_filters=["profanity"])
     client._stub.FilterOutput.return_value = grpc_response
@@ -73,6 +80,7 @@ def test_filter_output_calls_stub(client):
 # ---------------------------------------------------------------------------
 # check_policy
 # ---------------------------------------------------------------------------
+
 
 def test_check_policy_calls_stub(client):
     grpc_response = MagicMock(
@@ -99,6 +107,7 @@ def test_check_policy_calls_stub(client):
 # ---------------------------------------------------------------------------
 # report_violation
 # ---------------------------------------------------------------------------
+
 
 def test_report_violation_calls_stub(client):
     grpc_response = MagicMock(violation_id="v-123", recorded=True)

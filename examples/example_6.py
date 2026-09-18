@@ -11,10 +11,10 @@ The client allows users to:
 
 """
 
-
 from loguru import logger
 from rich import print as rich_print
 
+from gogi.gogi import Gogi
 from gogi.models.llm.llm_tool_service_definition import (
     LLMCostMetadata,
     LLMExecutionLimits,
@@ -22,17 +22,24 @@ from gogi.models.llm.llm_tool_service_definition import (
     LLMToolBehavior,
     LLMToolServiceDefinition,
 )
-from gogi.models.llm.requests.llm_tools.llm_discover_tools_request import LLMDiscoverToolsRequest
-from gogi.models.llm.requests.llm_tools.llm_execute_tool_request import LLMExecuteToolRequest
+from gogi.models.llm.requests.llm_tools.llm_discover_tools_request import (
+    LLMDiscoverToolsRequest,
+)
+from gogi.models.llm.requests.llm_tools.llm_execute_tool_request import (
+    LLMExecuteToolRequest,
+)
 from gogi.models.llm.requests.llm_tools.llm_get_task_request import LLMGetTaskRequest
-from gogi.models.llm.requests.llm_tools.llm_register_mcp_server_request import LLMRegisterMcpServerRequest
-from gogi.models.llm.requests.llm_tools.llm_register_tool_request import LLMRegisterToolRequest
-from gogi.models.llm.requests.llm_tools.llm_validate_tool_request import LLMValidateToolRequest
+from gogi.models.llm.requests.llm_tools.llm_register_mcp_server_request import (
+    LLMRegisterMcpServerRequest,
+)
+from gogi.models.llm.requests.llm_tools.llm_register_tool_request import (
+    LLMRegisterToolRequest,
+)
+from gogi.models.llm.requests.llm_tools.llm_validate_tool_request import (
+    LLMValidateToolRequest,
+)
 
-from gogi.gogi import Gogi
-
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     # connect to the Gogi platform.
     # This will be the first step in any interaction with the platform, and will
     # give you access to all the available clients (indexes, documents, and queries).
@@ -81,9 +88,7 @@ if __name__ == '__main__':
     )
     rich_print(f"Execute tool async response {execute_tool_async_response}")
 
-    get_task_response = platform.tools.get_task(
-        request=LLMGetTaskRequest(task_id=execute_tool_async_response.task_id)
-    )
+    get_task_response = platform.tools.get_task(request=LLMGetTaskRequest(task_id=execute_tool_async_response.task_id))
     rich_print(f"Get task response {get_task_response}")
 
     # register an external MCP server; its tools are imported into the registry

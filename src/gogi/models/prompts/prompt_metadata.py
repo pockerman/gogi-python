@@ -1,10 +1,10 @@
-from pydantic import BaseModel 
-from typing import Dict
+from pydantic import BaseModel
+
 
 class PromptTestInfo(BaseModel):
     test_set_id: str
     test_set_path: str
-    metrics: Dict[str, float]
+    metrics: dict[str, float]
 
 
 class PromptParameters(BaseModel):

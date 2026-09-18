@@ -1,15 +1,13 @@
 from pydantic import BaseModel
 
-from typing import Optional, List
 
 class LLMRunRequestConfig(BaseModel):
-
-    model: str 
+    model: str
     provider: str
-    temperature: float = 0.0 
+    temperature: float = 0.0
     max_tokens: int = 1000
     top_p: float = 1.0
-    stop_sequences: Optional[List[str]] = None
-    frequency_penalty: Optional[float] = None 
-    presence_penalty: Optional[float] = None
-    system_prompt_name: Optional[str] = None
+    stop_sequences: list[str] | None = None
+    frequency_penalty: float | None = None
+    presence_penalty: float | None = None
+    system_prompt_name: str | None = None

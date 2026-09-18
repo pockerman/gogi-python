@@ -21,7 +21,7 @@ client and the platform's gateway.
 """
 
 import time
-from typing import Callable
+from collections.abc import Callable
 
 import grpc
 

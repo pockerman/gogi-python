@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
-from gogi.models.workflow.scaling_config import ScalingConfig
-from gogi.models.workflow.resource_config import ResourceConfig
 from gogi.models.workflow.reliability_config import ReliabilityConfig
+from gogi.models.workflow.resource_config import ResourceConfig
+from gogi.models.workflow.scaling_config import ScalingConfig
 
 
 class WorkflowSpec(BaseModel):
