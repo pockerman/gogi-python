@@ -38,7 +38,7 @@ uv build
 uv pip install dist/*.whl
 ```
 
-Checkout the ```examples``` directory for various use cases. Here is a quickstart.
+Checkout the ```examples/intro``` directory for various use cases. Here is a quickstart.
 
 ```
 from loguru import logger
