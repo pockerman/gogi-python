@@ -72,6 +72,12 @@ If no chunk is retrieved, the pipeline answers that it found nothing relevant in
 
 ## Running the example
 
+Install this example's own dependencies (on top of the `gogi-python` SDK itself):
+
+```
+uv pip install -r examples/agents/summarization/requirements.txt
+```
+
 The example needs a running Gogi platform with
 
 - an OpenAI API key configured for the LLM gateway and the embeddings client, and
