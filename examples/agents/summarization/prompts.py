@@ -1,11 +1,21 @@
-"""Prompts used by the summarization agent.
+"""Prompt handling for the summarization agent.
 
-The prompts are not hard-coded into the agent. Instead, they are registered with the
-Gogi prompt registry and retrieved by id when the agent needs them. This way the prompts
-can be versioned, evaluated and updated independently of the agent code.
+Prompts are not hard-coded into the agent. Instead, the caller supplies a prompt file (TOML)
+that lists one or more prompts, each with:
+
+- name: identifies it in the Gogi prompt registry
+- role: the chat role it plays when sent to the LLM ("system", "user", "assistant")
+- parameters: the placeholder names the agent must substitute into its content at request time
+- content: the template text, using {parameter} placeholders
+
+The agent registers every prompt in the file with the Gogi prompt registry, fetches it back
+by id, and uses the fetched content (with its declared parameters filled in) to build the
+chat messages sent to the LLM. See summarization_prompts.toml for the default prompt set.
 """
 
+import tomllib
 from dataclasses import dataclass
+from pathlib import Path
 
 from gogi.gogi import Gogi
 from gogi.models import (
@@ -16,38 +26,37 @@ from gogi.models import (
     PromptTestInfo,
 )
 
-SYSTEM_PROMPT_NAME = "summarization-agent-system"
-SUMMARY_PROMPT_NAME = "summarization-agent-summary"
-PROMPT_VERSION = "v1.0.0"
 
-SYSTEM_PROMPT = """
-You are a precise summarization assistant.
-You summarize documents using ONLY the excerpts you are given.
-Never add facts that are not present in the excerpts.
-If the excerpts do not contain enough information to answer, say so explicitly.
-""".strip()
-
-# {context} and {query} are filled in by the RAG pipeline at request time
-SUMMARY_PROMPT_TEMPLATE = """
-Below are excerpts retrieved from the user's document. Each excerpt is numbered.
-
-<excerpts>
-{context}
-</excerpts>
-
-User request: {query}
-
-Write a concise summary that addresses the user request.
-- Use short paragraphs or bullet points.
-- Keep numbers, names and dates exactly as they appear in the excerpts.
-- Cite the excerpts you used with their number, e.g. [2].
-""".strip()
+@dataclass(frozen=True)
+class PromptSpec:
+    name: str
+    role: str
+    parameters: list[str]
+    content: str
 
 
 @dataclass(frozen=True)
-class SummarizationPrompts:
-    system: str
-    summary_template: str
+class RegisteredPrompt:
+    spec: PromptSpec
+    prompt_id: str
+    content: str  # fetched back from the registry after registration
+
+
+def load_prompt_file(path: Path) -> tuple[str, list[PromptSpec]]:
+    """Parse a TOML prompt file. Returns (version, specs)."""
+    with path.open("rb") as f:
+        data = tomllib.load(f)
+
+    specs = [
+        PromptSpec(
+            name=p["name"],
+            role=p["role"],
+            parameters=list(p.get("parameters", [])),
+            content=p["content"],
+        )
+        for p in data["prompts"]
+    ]
+    return data["version"], specs
 
 
 def _metadata(author: str, model: str) -> PromptMetadata:
@@ -66,39 +75,40 @@ def _metadata(author: str, model: str) -> PromptMetadata:
     )
 
 
-def register_prompts(platform: Gogi, index_name: str, author: str, model: str) -> dict[str, str]:
-    """Register the agent prompts with the Gogi prompt registry.
+def register_prompts(
+    platform: Gogi,
+    specs: list[PromptSpec],
+    version: str,
+    author: str,
+    model: str,
+    gogi_index: str,
+) -> list[RegisteredPrompt]:
+    """Register every prompt in the file with the Gogi prompt registry and fetch it back.
 
-    Returns:
-        A mapping from prompt name to the prompt id assigned by the registry.
+    Returns the registered prompts in the same order as ``specs``, which is also the order
+    the corresponding chat messages are sent to the LLM in.
     """
-    prompts = {
-        SYSTEM_PROMPT_NAME: SYSTEM_PROMPT,
-        SUMMARY_PROMPT_NAME: SUMMARY_PROMPT_TEMPLATE,
-    }
-
-    prompt_ids = {}
-    for name, content in prompts.items():
+    registered = []
+    for spec in specs:
         response = platform.prompts.register_prompt(
             request=PromptRegistrationRequest(
-                prompt_name=name,
-                prompt_version=PROMPT_VERSION,
-                gogi_index=index_name,
-                content=content.encode("utf-8"),
+                prompt_name=spec.name,
+                prompt_version=version,
+                gogi_index=gogi_index,
+                content=spec.content.encode("utf-8"),
                 metadata=_metadata(author=author, model=model),
             )
         )
-        prompt_ids[name] = response.prompt_id
-    return prompt_ids
+        fetched = platform.prompts.get_prompt(request=PromptGetRequest(prompt_id=response.prompt_id))
+        registered.append(
+            RegisteredPrompt(spec=spec, prompt_id=response.prompt_id, content=fetched.content.decode("utf-8"))
+        )
+    return registered
 
 
-def load_prompts(platform: Gogi, prompt_ids: dict[str, str]) -> SummarizationPrompts:
-    """Fetch the agent prompts from the registry.
-    The prompts client caches the prompts, so repeated calls do not hit the platform.
-    """
-
-    def _get(name: str) -> str:
-        response = platform.prompts.get_prompt(request=PromptGetRequest(prompt_id=prompt_ids[name]))
-        return response.content.decode("utf-8")
-
-    return SummarizationPrompts(system=_get(SYSTEM_PROMPT_NAME), summary_template=_get(SUMMARY_PROMPT_NAME))
+def fill(prompt: RegisteredPrompt, values: dict[str, str]) -> str:
+    """Substitute a registered prompt's declared parameters into its content."""
+    missing = [name for name in prompt.spec.parameters if name not in values]
+    if missing:
+        raise ValueError(f"Missing values for prompt {prompt.spec.name!r} parameters: {missing}")
+    return prompt.content.format(**{name: values[name] for name in prompt.spec.parameters})

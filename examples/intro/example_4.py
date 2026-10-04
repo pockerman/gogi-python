@@ -67,7 +67,7 @@ if __name__ == "__main__":
     retrieve_prompt_response = platform.prompts.get_prompt(
         request=PromptGetRequest(prompt_id=request_response.prompt_id)
     )
-    rich_print(f"Prompt get request response {request_response}")
+    rich_print(f"Prompt get request response {retrieve_prompt_response}")
 
     # delete the registered prompt
     delete_prompt_response = platform.prompts.delete_prompt(

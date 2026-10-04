@@ -4,13 +4,14 @@ The pipeline has three steps:
 
 1. Retrieve: search the agent's index for the chunks most similar to the user query.
    The platform embeds the query with the same OpenAI model the document was ingested with.
-2. Augment: fill the summary prompt template with the retrieved chunks and the user query.
-3. Generate: send the prompt to an OpenAI chat model through the Gogi LLM gateway.
+2. Augment: fill each registered prompt's declared parameters with the retrieved chunks and
+   the user query, producing one chat message per prompt (in the order they were registered).
+3. Generate: send the messages to an OpenAI chat model through the Gogi LLM gateway.
 """
 
 import time
 
-from prompts import SummarizationPrompts
+from prompts import RegisteredPrompt, fill
 from pydantic import BaseModel
 
 from gogi.gogi import Gogi
@@ -29,7 +30,7 @@ class RAGPipeline:
         self,
         platform: Gogi,
         index_name: str,
-        prompts: SummarizationPrompts,
+        prompts: list[RegisteredPrompt],
         llm_config: LLMRunRequestConfig,
         embeddings_client: str,
         embeddings_model: str,
@@ -60,13 +61,10 @@ class RAGPipeline:
 
     def build_messages(self, query: str, chunks: list[DocumentChunk]) -> list[LLMMessage]:
         context = "\n\n".join(f"[{i}] {chunk.content.strip()}" for i, chunk in enumerate(chunks, start=1))
-        user_prompt = self.prompts.summary_template.format(context=context, query=query)
+        values = {"context": context, "query": query}
 
         now = int(time.time())
-        return [
-            LLMMessage(role="system", content=self.prompts.system, timestamp=now),
-            LLMMessage(role="user", content=user_prompt, timestamp=now),
-        ]
+        return [LLMMessage(role=prompt.spec.role, content=fill(prompt, values), timestamp=now) for prompt in self.prompts]
 
     def run(self, query: str, document_ids: list[str] | None = None) -> RAGResult:
         chunks = self.retrieve(query=query, document_ids=document_ids)

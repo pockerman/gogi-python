@@ -30,12 +30,13 @@ the following services:
                                   LLM gateway (OpenAI) ──► summary
 ```
 
-| File                    | What it does                                                                                           |
-|-------------------------|--------------------------------------------------------------------------------------------------------|
-| `agent.py`              | The `SummarizationAgent` and the entry point. Creates the user index, registers prompts and workflow   |
-| `prompts.py`            | The system prompt and summary template; registers them with, and loads them from, the prompt registry  |
-| `ingestion_workflow.py` | The `@workflow` that ingests a document into the index using OpenAI embeddings, and its job helpers    |
-| `rag_pipeline.py`       | Retrieve (`documents.search_documents`) → augment (prompt template) → generate (`llm_clients.run`)     |
+| File                           | What it does                                                                                    |
+|--------------------------------|--------------------------------------------------------------------------------------------------|
+| `agent.py`                     | The `SummarizationAgent` and the entry point. Registers the prompt file, creates the user index and the ingestion workflow |
+| `summarization_prompts.toml`   | The default prompt file: one or more named, role-tagged prompt templates                        |
+| `prompts.py`                   | Parses prompt files and registers/fetches their prompts with the Gogi prompt registry           |
+| `ingestion_workflow.py`        | The `@workflow` that ingests a document into the index using OpenAI embeddings, and its job helpers |
+| `rag_pipeline.py`              | Retrieve (`documents.search_documents`) → augment (fill each prompt's parameters) → generate (`llm_clients.run`) |
 
 ### Indexes
 
@@ -44,9 +45,18 @@ All the documents the user uploads are ingested into it.
 
 ### Prompts
 
-The system prompt and the summary prompt template are registered with the Gogi prompt registry instead of
-living in the agent code. This allows them to be versioned and evaluated independently of the agent.
-The agent retrieves them by id; the prompts client caches them so the registry is only hit once.
+The caller supplies a prompt file in TOML (`--prompt-file`, defaulting to the bundled
+`summarization_prompts.toml`). Each entry in the file declares:
+
+- `name` — identifies the prompt in the Gogi prompt registry
+- `role` — the chat role it plays when sent to the LLM (`system`, `user`, or `assistant`)
+- `parameters` — the placeholder names the agent must substitute into it at request time
+- `content` — the template text, using `{parameter}` placeholders
+
+At startup the agent registers every prompt in the file with the Gogi prompt registry, fetches
+each one back by id, and later fills in its declared parameters (`context`, `query`) to build
+the chat messages sent to the LLM — one message per prompt entry, in file order. This way the
+prompt set can be versioned, evaluated and swapped out without touching the agent code.
 
 ### Workflows
 
@@ -65,7 +75,8 @@ When the user asks for a summary, the pipeline
 
 1. **retrieves** the chunks most similar to the user request with `platform.documents.search_documents`.
    The query is embedded with the same OpenAI model the document was ingested with,
-2. **augments** the summary prompt template with the numbered chunks and the user request, and
+2. **augments** each registered prompt by filling in its declared parameters (the numbered chunks as
+   `context`, the user request as `query`), and
 3. **generates** the summary with an OpenAI chat model through `platform.llm_clients.run`.
 
 If no chunk is retrieved, the pipeline answers that it found nothing relevant instead of letting the model guess.
@@ -88,8 +99,16 @@ python examples/agents/summarization/agent.py
 python examples/agents/summarization/agent.py --file my_report.pdf --query "Summarize the main findings"
 ```
 
+To use a different prompt set, write your own TOML file (see `summarization_prompts.toml` for the
+format) and pass it with `--prompt-file`:
+
+```
+python examples/agents/summarization/agent.py --prompt-file my_prompts.toml
+```
+
 | Option / env var       | Default                    | Description                                              |
 |------------------------|-----------------------------|----------------------------------------------------------|
+| `--prompt-file`        | `summarization_prompts.toml` | TOML file declaring the prompts to register and use    |
 | `--file`               | a sample handbook          | The document to upload                                   |
 | `--query`              | `Summarize the document`   | What to summarize                                        |
 | `--owner`              | `summarization-demo-user`  | The user that owns the index and the documents           |
