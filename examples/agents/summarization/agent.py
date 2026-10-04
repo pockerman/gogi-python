@@ -25,8 +25,6 @@ import uuid
 from pathlib import Path
 
 from ingestion_workflow import (
-    EMBEDDINGS_CLIENT,
-    EMBEDDINGS_MODEL,
     ingest_document_workflow,
     register_ingestion_workflow,
     submit_ingestion_job,
@@ -42,10 +40,21 @@ from gogi.models import LLMRunRequestConfig
 
 GOGI_GATEWAY_URL = os.getenv("GOGI_GATEWAY_URL", "localhost:50051")
 OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini")
+DEFAULT_LLM_PROVIDER = "openai"
+DEFAULT_EMBEDDINGS_CLIENT = "openai"
+DEFAULT_EMBEDDINGS_MODEL = "text-embedding-3-small"
 
 
 class SummarizationAgent:
-    def __init__(self, platform: Gogi, owner: str, run_workflows_locally: bool = True):
+    def __init__(
+        self,
+        platform: Gogi,
+        owner: str,
+        run_workflows_locally: bool = True,
+        llm_provider: str = DEFAULT_LLM_PROVIDER,
+        embeddings_client: str = DEFAULT_EMBEDDINGS_CLIENT,
+        embeddings_model: str = DEFAULT_EMBEDDINGS_MODEL,
+    ):
         """
         Args:
             platform: Connection to the Gogi platform.
@@ -53,17 +62,27 @@ class SummarizationAgent:
             run_workflows_locally: When True, the ingestion workflow is executed in this process for every
                 job the agent creates. Set it to False once the workflow is deployed on the platform, in which
                 case the platform runtime picks up the jobs and the agent only waits for them to finish.
+            llm_provider: The LLM provider used to generate summaries through the Gogi LLM gateway.
+            embeddings_client: The embeddings provider used to embed documents and queries.
+            embeddings_model: The embeddings model used to embed documents and queries. Must be the same
+                for ingestion and retrieval, since a query is only comparable to chunks embedded with it.
         """
         self.platform = platform
         self.owner = owner
         self.index_name = f"{owner}-summarization"
         self.run_workflows_locally = run_workflows_locally
+        self.llm_provider = llm_provider
+        self.embeddings_client = embeddings_client
+        self.embeddings_model = embeddings_model
 
         self._workflow_id: str | None = None
         self._pipeline: RAGPipeline | None = None
 
     def setup(self) -> None:
         """Create the user's index, register the prompts and the ingestion workflow."""
+        rich_print(f"[dim]Embeddings: {self.embeddings_client}/{self.embeddings_model}[/dim]")
+        rich_print(f"[dim]Chat model: {self.llm_provider}/{OPENAI_CHAT_MODEL}[/dim]")
+
         existing = {index.index_name for index in self.platform.indexes.list_owner_indexes(owner_name=self.owner)}
         if self.index_name not in existing:
             self.platform.indexes.create_index(index_name=self.index_name, owner_name=self.owner)
@@ -79,10 +98,10 @@ class SummarizationAgent:
             index_name=self.index_name,
             prompts=load_prompts(self.platform, prompt_ids),
             llm_config=LLMRunRequestConfig(
-                model=OPENAI_CHAT_MODEL, provider="openai", temperature=0.1, max_tokens=1000
+                model=OPENAI_CHAT_MODEL, provider=self.llm_provider, temperature=0.1, max_tokens=1000
             ),
-            embeddings_client=EMBEDDINGS_CLIENT,
-            embeddings_model=EMBEDDINGS_MODEL,
+            embeddings_client=self.embeddings_client,
+            embeddings_model=self.embeddings_model,
         )
 
     def upload(self, path: Path) -> str:
@@ -98,6 +117,8 @@ class SummarizationAgent:
             document_id=document_id,
             filename=path.name,
             content=path.read_bytes(),
+            embeddings_client=self.embeddings_client,
+            embeddings_model=self.embeddings_model,
         )
         logger.info(f"Submitted ingestion job {job_id} for {path.name}")
 
@@ -155,11 +176,33 @@ if __name__ == "__main__":
     parser.add_argument(
         "--deployed", action="store_true", help="The ingestion workflow is deployed; don't run it in this process"
     )
+    parser.add_argument(
+        "--llm-provider",
+        default=DEFAULT_LLM_PROVIDER,
+        help="The LLM provider used to generate summaries",
+    )
+    parser.add_argument(
+        "--embeddings-client",
+        default=DEFAULT_EMBEDDINGS_CLIENT,
+        help="The embeddings provider used to embed documents and queries",
+    )
+    parser.add_argument(
+        "--embeddings-model",
+        default=DEFAULT_EMBEDDINGS_MODEL,
+        help="The embeddings model used to embed documents and queries",
+    )
     args = parser.parse_args()
 
     platform = Gogi(gateway_url=GOGI_GATEWAY_URL, logger=logger)
 
-    agent = SummarizationAgent(platform=platform, owner=args.owner, run_workflows_locally=not args.deployed)
+    agent = SummarizationAgent(
+        platform=platform,
+        owner=args.owner,
+        run_workflows_locally=not args.deployed,
+        llm_provider=args.llm_provider,
+        embeddings_client=args.embeddings_client,
+        embeddings_model=args.embeddings_model,
+    )
     agent.setup()
 
     document_id = agent.upload(args.file or create_sample_document())

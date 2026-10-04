@@ -88,11 +88,14 @@ python examples/agents/summarization/agent.py
 python examples/agents/summarization/agent.py --file my_report.pdf --query "Summarize the main findings"
 ```
 
-| Option / env var    | Default                   | Description                                              |
-|---------------------|---------------------------|----------------------------------------------------------|
-| `--file`            | a sample handbook         | The document to upload                                   |
-| `--query`           | `Summarize the document`  | What to summarize                                        |
-| `--owner`           | `summarization-demo-user` | The user that owns the index and the documents           |
-| `--deployed`        | off                       | Don't run the ingestion workflow in-process              |
-| `GOGI_GATEWAY_URL`  | `localhost:50051`         | The Gogi gateway                                         |
-| `OPENAI_CHAT_MODEL` | `gpt-4o-mini`             | The OpenAI model that writes the summary                 |
+| Option / env var       | Default                    | Description                                              |
+|------------------------|-----------------------------|----------------------------------------------------------|
+| `--file`               | a sample handbook          | The document to upload                                   |
+| `--query`              | `Summarize the document`   | What to summarize                                        |
+| `--owner`              | `summarization-demo-user`  | The user that owns the index and the documents           |
+| `--deployed`           | off                        | Don't run the ingestion workflow in-process               |
+| `--llm-provider`       | `openai`                   | The LLM provider used to generate summaries               |
+| `--embeddings-client`  | `openai`                   | The embeddings provider used to embed documents and queries |
+| `--embeddings-model`   | `text-embedding-3-small`   | The embeddings model used to embed documents and queries. Must be the same at ingestion and retrieval time |
+| `GOGI_GATEWAY_URL`     | `localhost:50051`          | The Gogi gateway                                         |
+| `OPENAI_CHAT_MODEL`    | `gpt-4o-mini`              | The OpenAI model that writes the summary                 |

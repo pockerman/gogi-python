@@ -31,8 +31,6 @@ from gogi.utils.document_ingestion_polling import wait_for_document_ingest
 from gogi.utils.job_status_enum import JobStatus
 from gogi.utils.workflow import workflow
 
-EMBEDDINGS_CLIENT = "openai"
-EMBEDDINGS_MODEL = "text-embedding-3-small"
 CHUNK_STRATEGY = "fixed"
 
 # image the deploy CLI builds for this workflow. Only needed when the workflow runs on the platform
@@ -50,8 +48,16 @@ CONTAINER_IMAGE = "gogi/summarization-ingestion:latest"
     timeout_seconds=600,
     max_retries=2,
 )
-def ingest_document_workflow(job_id: str, index_name: str, document_id: str, filename: str, content_b64: str) -> dict:
-    """Embed a user document with OpenAI and store it in the agent's index.
+def ingest_document_workflow(
+    job_id: str,
+    index_name: str,
+    document_id: str,
+    filename: str,
+    content_b64: str,
+    embeddings_client: str,
+    embeddings_model: str,
+) -> dict:
+    """Embed a user document and store it in the agent's index.
 
     Args:
         job_id: The workflow job this invocation serves. Progress and the final result are reported on it.
@@ -59,6 +65,8 @@ def ingest_document_workflow(job_id: str, index_name: str, document_id: str, fil
         document_id: Id the document is stored under. The RAG pipeline uses it to restrict retrieval.
         filename: Original name of the uploaded file.
         content_b64: The file contents, base64 encoded so they can travel inside the job's JSON input.
+        embeddings_client: The embeddings provider to embed the document's chunks with.
+        embeddings_model: The embeddings model to embed the document's chunks with.
     """
 
     # the workflow runs in its own container, so it opens its own connection to the platform
@@ -66,7 +74,7 @@ def ingest_document_workflow(job_id: str, index_name: str, document_id: str, fil
 
     try:
         platform.workflows.update_job_progress(
-            UpdateJobProgressRequest(job_id=job_id, progress_message=f"Embedding {filename} with {EMBEDDINGS_MODEL}")
+            UpdateJobProgressRequest(job_id=job_id, progress_message=f"Embedding {filename} with {embeddings_model}")
         )
 
         content_type, _ = mimetypes.guess_type(filename)
@@ -78,8 +86,8 @@ def ingest_document_workflow(job_id: str, index_name: str, document_id: str, fil
                 content=base64.b64decode(content_b64),
                 content_type=content_type or "UNKNOWN",
                 chunk_strategy=CHUNK_STRATEGY,
-                embeddings_client=EMBEDDINGS_CLIENT,
-                embeddings_model=EMBEDDINGS_MODEL,
+                embeddings_client=embeddings_client,
+                embeddings_model=embeddings_model,
                 metadata={"filename": filename},
             )
         )
@@ -119,7 +127,14 @@ def register_ingestion_workflow(platform: Gogi) -> str:
 
 
 def submit_ingestion_job(
-    platform: Gogi, workflow_id: str, index_name: str, document_id: str, filename: str, content: bytes
+    platform: Gogi,
+    workflow_id: str,
+    index_name: str,
+    document_id: str,
+    filename: str,
+    content: bytes,
+    embeddings_client: str,
+    embeddings_model: str,
 ) -> tuple[str, dict]:
     """Create an ingestion job for a document. Returns the job id and the job input."""
     job_input = {
@@ -127,6 +142,8 @@ def submit_ingestion_job(
         "document_id": document_id,
         "filename": filename,
         "content_b64": base64.b64encode(content).decode("ascii"),
+        "embeddings_client": embeddings_client,
+        "embeddings_model": embeddings_model,
     }
     response = platform.workflows.create_job(
         CreateJobRequest(workflow_id=workflow_id, input_json=json.dumps(job_input))
