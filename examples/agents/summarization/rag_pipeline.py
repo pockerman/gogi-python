@@ -64,7 +64,9 @@ class RAGPipeline:
         values = {"context": context, "query": query}
 
         now = int(time.time())
-        return [LLMMessage(role=prompt.spec.role, content=fill(prompt, values), timestamp=now) for prompt in self.prompts]
+        return [
+            LLMMessage(role=prompt.spec.role, content=fill(prompt, values), timestamp=now) for prompt in self.prompts
+        ]
 
     def run(self, query: str, document_ids: list[str] | None = None) -> RAGResult:
         chunks = self.retrieve(query=query, document_ids=document_ids)
