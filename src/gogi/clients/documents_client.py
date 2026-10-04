@@ -1,6 +1,7 @@
 from gogi.clients.base_client import BaseClient
 from gogi.models.document_metadata import DocumentMetadata
 from gogi.models.ingest_document import IngestDocumentJob, IngestDocumentRequest
+from gogi.models.search_documents import DocumentChunk, SearchDocumentsRequest, SearchDocumentsResponse
 from gogi.v1.data import document_service_pb2, document_service_pb2_grpc
 
 
@@ -27,6 +28,17 @@ class DocumentsClient(BaseClient):
             status=resp.status,
             progress=resp.progress if resp.progress else None,
             error_message=resp.error_message if resp.error_message else None,
+        )
+
+    @staticmethod
+    def proto_to_chunk(resp) -> DocumentChunk:
+        return DocumentChunk(
+            chunk_id=resp.chunk_id,
+            document_id=resp.document_id,
+            index_name=resp.index_name,
+            content=resp.content,
+            score=resp.score,
+            metadata=dict(resp.metadata) if resp.metadata else None,
         )
 
     def __init__(self, platform, logger=None):
@@ -105,3 +117,28 @@ class DocumentsClient(BaseClient):
         resp = self._stub.GetDocumentIngestJob(request, metadata=self.route_metadata)
 
         return self.proto_to_ingest_job(resp)
+
+    def search_documents(self, request: SearchDocumentsRequest) -> SearchDocumentsResponse:
+        """
+        Retrieve the chunks of an index that are most similar to a query.
+        The query is embedded server-side with the given embeddings client and model,
+        so these must match the ones used when the documents were ingested.
+        Args:
+            request (SearchDocumentsRequest): The index to search, the query and the number of chunks to return.
+        Returns:
+            SearchDocumentsResponse: The matching chunks ordered by decreasing similarity score.
+        """
+        if self.logger:
+            self.logger.debug(f"Searching index: {request.index_name} (top_k={request.top_k})")
+
+        proto_request = document_service_pb2.SearchDocumentsRequest(
+            index_name=request.index_name,
+            query=request.query,
+            top_k=request.top_k,
+            embeddings_model=request.embeddings_model,
+            embeddings_client=request.embeddings_client,
+            document_ids=request.document_ids,
+            metadata_filter=request.metadata_filter,
+        )
+        resp = self._stub.SearchDocuments(proto_request, metadata=self.route_metadata)
+        return SearchDocumentsResponse(chunks=[self.proto_to_chunk(c) for c in resp.chunks])

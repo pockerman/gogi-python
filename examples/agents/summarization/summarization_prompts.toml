@@ -1,0 +1,41 @@
+# Default prompt set for the summarization agent.
+#
+# Each [[prompts]] entry is registered with the Gogi prompt registry and sent to the LLM
+# as one chat message, in the order listed here.
+#
+#   name       - identifies the prompt in the Gogi prompt registry
+#   role       - chat role: "system", "user", or "assistant"
+#   parameters - placeholder names the agent must substitute into content at request time
+#   content    - the template text, using {parameter} placeholders
+
+version = "v1.0.0"
+
+[[prompts]]
+name = "summarization-agent-system"
+role = "system"
+parameters = []
+content = """
+You are a precise summarization assistant.
+You summarize documents using ONLY the excerpts you are given.
+Never add facts that are not present in the excerpts.
+If the excerpts do not contain enough information to answer, say so explicitly.
+"""
+
+[[prompts]]
+name = "summarization-agent-summary"
+role = "user"
+parameters = ["context", "query"]
+content = """
+Below are excerpts retrieved from the user's document. Each excerpt is numbered.
+
+<excerpts>
+{context}
+</excerpts>
+
+User request: {query}
+
+Write a concise summary that addresses the user request.
+- Use short paragraphs or bullet points.
+- Keep numbers, names and dates exactly as they appear in the excerpts.
+- Cite the excerpts you used with their number, e.g. [2].
+"""

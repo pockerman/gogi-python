@@ -4,13 +4,6 @@ Python SDK for <a href="https://github.com/pockerman/gogi">gogi[AI]</a> platform
 
 ## Installation
 
-- gogi is based on gRPC. Thus you will need the associated messages and services definitions.
-Fetch the protos
-
-```
-git submodule update --remote --recursive
-```
-
 - Create a virtual environment for the SDK (do not install the SDK system-wide)
 - Activate the virtual environment e.g.
 
@@ -19,23 +12,11 @@ conda create -n gogi-python-3.12 python=3.12
 conda activate gogi-python-3.12
 ```
 
-- Install ```uv``` package manager using pip
+- Run the install script. It fetches the gRPC protos, installs the ```uv``` package manager,
+builds the protobufs, and builds and installs the SDK into the project's ```.venv```:
 
 ```
-pip install uv
-```
-
-- Build the protos
-
-```
-uv run python scripts/build_protos.py
-```
-
-- Build the package and install locally
-
-```
-uv build
-uv pip install dist/*.whl
+./scripts/install.sh
 ```
 
 Checkout the ```examples/intro``` directory for various use cases. Here is a quickstart.
