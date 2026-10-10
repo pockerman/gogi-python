@@ -39,7 +39,7 @@ next provider.
 ## Running the example
 
 ```bash
-python examples/example_3/example_3.py
+python examples/intro/example_3/example_3.py
 ```
 
 ## Walkthrough
