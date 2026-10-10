@@ -48,7 +48,8 @@ PROVIDER_MODELS = [
 # Pull the model first with `ollama pull llama3.2`
 OLLAMA_PROVIDER = "ollama"
 OLLAMA_MODEL = "llama3.2"
-OLLAMA_URL = "http://localhost:11434"
+# Ollama, like vLLM and TGI, serves an OpenAI-compatible API under /v1
+OLLAMA_ENDPOINT = "http://localhost:11434/v1"
 
 SYSTEM_PROMPT = "You are a history tutor. Answer in at most three short paragraphs."
 QUESTION = "Who was Alexander the Great?"
@@ -107,10 +108,12 @@ def run_provider(platform: Gogi, provider: str, model: str) -> None:
 
 
 def add_ollama_provider(platform: Gogi) -> None:
-    # A new provider is added by registering a model it serves. The registration
-    # tells the platform where the model is served (endpoint), how to check that
-    # it is up (health_check), which adapter talks to it (adapter_type) and what
-    # the model can do (capabilities).
+    # A new provider is added by registering a self-hosted model it serves. The
+    # registration tells the platform where the model's OpenAI-compatible API is
+    # served (endpoint), how to check that it is up (health_check, a path on the
+    # endpoint's server), which adapter talks to it (adapter_type) and what the
+    # model can do (capabilities). Self-hosted inference servers speak OpenAI's
+    # protocol, so they use the "openai" adapter, which is also the default.
     registration = LLMRegisterRequest(
         info=LLMModelInfo(
             name=OLLAMA_MODEL,
@@ -123,9 +126,9 @@ def add_ollama_provider(platform: Gogi) -> None:
                 supports_vision=False,
             ),
         ),
-        endpoint=OLLAMA_URL,
-        health_check=f"{OLLAMA_URL}/api/version",
-        adapter_type=OLLAMA_PROVIDER,
+        endpoint=OLLAMA_ENDPOINT,
+        health_check="/api/version",
+        adapter_type="openai",
     )
     registration_response = platform.llm_clients.register_llm(registration)
     rich_print(f"Model registration response {registration_response}")
@@ -147,16 +150,11 @@ def add_ollama_provider(platform: Gogi) -> None:
     rich_print(f"List LLMs response {list_response}")
 
     # The client caches the providers, so refresh them to pick up the new one.
-    # Once the platform routes requests to registered models, the new provider
-    # is used exactly like the built-in ones.
+    # From now on the new provider is used exactly like the built-in ones
     platform.llm_clients.get_llm_providers()
-    if OLLAMA_PROVIDER in platform.llm_clients.providers:
-        run_provider(platform, OLLAMA_PROVIDER, OLLAMA_MODEL)
-    else:
-        logger.warning(
-            f"The platform does not route requests to the {OLLAMA_PROVIDER} provider yet; "
-            f"available providers are {platform.llm_clients.providers}"
-        )
+    rich_print(f"Platform providers {platform.llm_clients.providers}")
+
+    run_provider(platform, OLLAMA_PROVIDER, OLLAMA_MODEL)
 
 
 if __name__ == "__main__":

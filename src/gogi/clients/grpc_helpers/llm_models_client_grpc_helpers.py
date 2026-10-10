@@ -109,6 +109,7 @@ class LLMModelsClientGRPCHelper:
             endpoint=request.endpoint,
             health_check=request.health_check,
             adapter_type=request.adapter_type,
+            credential_ref=request.credential_ref,
         )
 
     @staticmethod
@@ -171,6 +172,7 @@ class LLMModelsClientGRPCHelper:
                 status=model.status,
                 registered_at=model.registered_at,
                 adapter_type=model.adapter_type,
+                credential_ref=model.credential_ref,
             )
             for model in grpc_response.models
         ]

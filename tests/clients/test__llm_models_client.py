@@ -8,12 +8,16 @@ from gogi.clients.grpc_helpers.llm_models_client_grpc_helpers import (
 )
 from gogi.clients.llm_models_client import LLMModelsClient
 from gogi.models import (
+    LLMCapabilities,
+    LLMModelInfo,
+    LLMRegisterRequest,
     LLMRunRequest,
     LLMRunRequestConfig,
     LLMTokenUsage,
     LLMToolCall,
     ToolCallFunction,
 )
+from gogi.v1 import llm_model_service_pb2
 
 
 @pytest.fixture
@@ -285,3 +289,61 @@ def test_run_builds_grpc_request(client, llm_request, monkeypatch):
     client.run(llm_request)
 
     assert called
+
+
+def _registration_request(credential_ref: str = "") -> LLMRegisterRequest:
+    return LLMRegisterRequest(
+        info=LLMModelInfo(
+            name="healthfirst-medical-v1",
+            provider="custom",
+            capabilities=LLMCapabilities(
+                context_window=8192,
+                supports_vision=False,
+                supports_tools=True,
+                supports_streaming=True,
+                supports_json_mode=False,
+            ),
+        ),
+        endpoint="http://ml-inference.internal:8000/v1",
+        health_check="/health",
+        adapter_type="openai",
+        credential_ref=credential_ref,
+    )
+
+
+def test_build_grpc_registration_request_with_credential_ref():
+    grpc_request = LLMModelsClientGRPCHelper.build_grpc_registration_request(
+        _registration_request(credential_ref="ml-inference-prod")
+    )
+
+    assert grpc_request.info.name == "healthfirst-medical-v1"
+    assert grpc_request.endpoint == "http://ml-inference.internal:8000/v1"
+    assert grpc_request.health_check == "/health"
+    assert grpc_request.credential_ref == "ml-inference-prod"
+
+
+def test_build_grpc_registration_request_without_credential_ref():
+    grpc_request = LLMModelsClientGRPCHelper.build_grpc_registration_request(_registration_request())
+
+    assert grpc_request.credential_ref == ""
+
+
+def test_serialize_registered_llms_with_credential_ref():
+    grpc_response = llm_model_service_pb2.ListRegisteredLLMsResponse(
+        models=[
+            llm_model_service_pb2.RegisteredLLM(
+                info=llm_model_service_pb2.ModelInfo(name="healthfirst-medical-v1", provider="custom"),
+                endpoint="http://ml-inference.internal:8000/v1",
+                health_check="/health",
+                status="provisioning",
+                registered_at="2026-10-10T12:00:00Z",
+                adapter_type="openai",
+                credential_ref="ml-inference-prod",
+            )
+        ]
+    )
+
+    response = LLMModelsClientGRPCHelper.serialize_list_registered_llms_grpc_response(grpc_response)
+
+    assert response.models[0].credential_ref == "ml-inference-prod"
+    assert response.models[0].status == "provisioning"

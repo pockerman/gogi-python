@@ -22,7 +22,7 @@ server, and how to query the new model's status and capabilities.
 
                          LLMRegisterRequest(model, endpoint, health check, adapter, capabilities)
   example_3.py ──────────────────────────────────────────────► Gateway ──► LLMs service (model registry)
-                                                                                      ┆ (planned)
+                                                                                      │
                                                                                       ▼
                                                                           Ollama on localhost:11434
 ```
@@ -106,37 +106,54 @@ empty.
 
 ### 6. Adding a new provider: Ollama
 
-The platform supports OpenAI and Anthropic out of the box. Other providers are added by registering a model
-they serve. `add_ollama_provider()` registers `llama3.2`, served by a local Ollama server, with an
-`LLMRegisterRequest`:
+The platform supports OpenAI and Anthropic out of the box. Self-hosted models are added by registering them.
+Self-hosted inference servers such as vLLM, TGI and Ollama expose an OpenAI-compatible API, so the platform
+needs no Ollama-specific code: it calls the registered endpoint through the same adapter it uses for OpenAI.
 
-| Field          | Value in the example                   | Meaning                                              |
-|----------------|----------------------------------------|------------------------------------------------------|
-| `info.name`    | `llama3.2`                             | The model name used in requests                      |
-| `info.provider`| `ollama`                               | The provider the model belongs to                    |
+`add_ollama_provider()` registers `llama3.2`, served by a local Ollama server, with an `LLMRegisterRequest`:
+
+| Field               | Value in the example         | Meaning                                                          |
+|---------------------|------------------------------|------------------------------------------------------------------|
+| `info.name`         | `llama3.2`                   | The model name used in requests                                  |
+| `info.provider`     | `ollama`                     | The provider the model is listed and requested under. Defaults to `custom` |
 | `info.capabilities` | 128K context, tools, streaming, JSON mode, no vision | What the model can do. Clients can query it before choosing a model |
-| `endpoint`     | `http://localhost:11434`               | Where the model is served                            |
-| `health_check` | `http://localhost:11434/api/version`   | A URL the platform can call to check the model is up |
-| `adapter_type` | `ollama`                               | Which adapter translates platform requests into the provider's API |
+| `endpoint`          | `http://localhost:11434/v1`  | The base URL of the model's OpenAI-compatible API                |
+| `health_check`      | `/api/version`               | A path on the endpoint's server (or a full URL) the platform calls to check the model is up |
+| `adapter_type`      | `openai`                     | The adapter that talks to the model. `openai`, the default, covers any OpenAI-compatible server; `vllm`, `tgi` and `ollama` are accepted as names for it |
 
 After registering the model, the example queries it like any other model:
 
-- `get_llm_status(GetLLMStatusRequest(name=...))` returns the model's status, endpoint and when it was last
-  checked
+- `get_llm_status(GetLLMStatusRequest(name=...))` checks the model's health and returns its status, endpoint and
+  when it was last checked
 - `get_llm_capabilities(GetLLMCapabilitiesRequest(model=...))` returns its capabilities
 - `list_registered_llms(...)` lists the registered models and `list_llms(...)` all the models of the platform
 
-Finally, the example refreshes the client's cached providers with `get_llm_providers()`. Once the platform
-lists `ollama`, the new provider is used exactly like the built-in ones: the example sends it the same request
-as OpenAI and Anthropic, blocking and streamed.
+Finally, the example refreshes the client's cached providers with `get_llm_providers()`, which now lists
+`ollama` with its model. From then on the new provider is used exactly like the built-in ones: the example sends
+it the same request as OpenAI and Anthropic, blocking and streamed.
 
-### Current limitations
+### How the platform handles a registration
 
-Registering a model is not yet wired into the LLMs service: the platform acknowledges the registration but does
-not store it, the status, capabilities and model listings are placeholders, and requests are not routed to
-registered models. Until then, `ollama` does not appear in the providers, and the example logs a warning
-instead of sending it the request. The client code in this example does not need to change once the platform
-supports it.
+- **Storage**: the registration is stored in the platform's database, so it survives restarts and every
+  replica of the LLMs service can route to the model. Registering a model with the name of an already
+  registered model updates its registration.
+- **Routing**: requests are routed to a registered model by its provider and model name, through the
+  OpenAI-compatible adapter.
+- **Status**: a newly registered model is `provisioning`. Every `get_llm_status` call runs the health check and
+  records the result: `healthy` for a 2xx answer, `unhealthy` otherwise. A model without a health check stays
+  `provisioning`. `list_registered_llms` reports the last recorded status.
+- **Validation**: the platform rejects registrations under a built-in provider (`openai`, `anthropic`), with
+  the name of a built-in model, with an unsupported adapter, or with an endpoint or health check that is not an
+  `http(s)` URL.
+- **Reachability**: the endpoint must be reachable from the LLMs service, not just from your machine. When the
+  platform runs in Docker or Kubernetes, `localhost` is the service's own container; use an address the service
+  can reach instead, e.g. `http://host.docker.internal:11434/v1` for an Ollama running on the Docker host.
+- **Credentials**: the local Ollama needs no credentials. An endpoint that does is registered with
+  `credential_ref`, the name of a credential held by the platform's credential store (AWS Secrets Manager or
+  HashiCorp Vault), e.g. `credential_ref="ml-inference-prod"`. The platform reads the secret for every request
+  and sends it as the API key, so the secret never appears in the registration, and a rotated secret is used
+  without registering the model again. See "Credentials for registered models" in the platform's
+  installation docs for how to store a credential.
 
 ## Driver code
 
@@ -193,7 +210,8 @@ PROVIDER_MODELS = [
 # Pull the model first with `ollama pull llama3.2`
 OLLAMA_PROVIDER = "ollama"
 OLLAMA_MODEL = "llama3.2"
-OLLAMA_URL = "http://localhost:11434"
+# Ollama, like vLLM and TGI, serves an OpenAI-compatible API under /v1
+OLLAMA_ENDPOINT = "http://localhost:11434/v1"
 
 SYSTEM_PROMPT = "You are a history tutor. Answer in at most three short paragraphs."
 QUESTION = "Who was Alexander the Great?"
@@ -252,10 +270,12 @@ def run_provider(platform: Gogi, provider: str, model: str) -> None:
 
 
 def add_ollama_provider(platform: Gogi) -> None:
-    # A new provider is added by registering a model it serves. The registration
-    # tells the platform where the model is served (endpoint), how to check that
-    # it is up (health_check), which adapter talks to it (adapter_type) and what
-    # the model can do (capabilities).
+    # A new provider is added by registering a self-hosted model it serves. The
+    # registration tells the platform where the model's OpenAI-compatible API is
+    # served (endpoint), how to check that it is up (health_check, a path on the
+    # endpoint's server), which adapter talks to it (adapter_type) and what the
+    # model can do (capabilities). Self-hosted inference servers speak OpenAI's
+    # protocol, so they use the "openai" adapter, which is also the default.
     registration = LLMRegisterRequest(
         info=LLMModelInfo(
             name=OLLAMA_MODEL,
@@ -268,9 +288,9 @@ def add_ollama_provider(platform: Gogi) -> None:
                 supports_vision=False,
             ),
         ),
-        endpoint=OLLAMA_URL,
-        health_check=f"{OLLAMA_URL}/api/version",
-        adapter_type=OLLAMA_PROVIDER,
+        endpoint=OLLAMA_ENDPOINT,
+        health_check="/api/version",
+        adapter_type="openai",
     )
     registration_response = platform.llm_clients.register_llm(registration)
     rich_print(f"Model registration response {registration_response}")
@@ -292,16 +312,11 @@ def add_ollama_provider(platform: Gogi) -> None:
     rich_print(f"List LLMs response {list_response}")
 
     # The client caches the providers, so refresh them to pick up the new one.
-    # Once the platform routes requests to registered models, the new provider
-    # is used exactly like the built-in ones.
+    # From now on the new provider is used exactly like the built-in ones
     platform.llm_clients.get_llm_providers()
-    if OLLAMA_PROVIDER in platform.llm_clients.providers:
-        run_provider(platform, OLLAMA_PROVIDER, OLLAMA_MODEL)
-    else:
-        logger.warning(
-            f"The platform does not route requests to the {OLLAMA_PROVIDER} provider yet; "
-            f"available providers are {platform.llm_clients.providers}"
-        )
+    rich_print(f"Platform providers {platform.llm_clients.providers}")
+
+    run_provider(platform, OLLAMA_PROVIDER, OLLAMA_MODEL)
 
 
 if __name__ == "__main__":
