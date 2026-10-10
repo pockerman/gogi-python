@@ -82,8 +82,8 @@ class LLMSessionsClientGRPCHelper:
             content=msg.content or "",
             tool_calls=[
                 llm_tool_pb2.ToolCall(
-                    id=tc.id,
-                    type=tc.type,
+                    id=tc.idx,
+                    type=tc.tool_type,
                     function=llm_tool_pb2.ToolCallFunction(
                         name=tc.function.name,
                         arguments=tc.function.arguments,
@@ -168,8 +168,8 @@ class LLMSessionsClientGRPCHelper:
         for msg in grpc_response.messages:
             tool_calls = [
                 LLMToolCall(
-                    id=tc.id,
-                    type=tc.type,
+                    idx=tc.id,
+                    tool_type=tc.type,
                     function=ToolCallFunction(
                         name=tc.function.name,
                         arguments=tc.function.arguments,
