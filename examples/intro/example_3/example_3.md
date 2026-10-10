@@ -22,7 +22,7 @@ server, and how to query the new model's status and capabilities.
 
                          LLMRegisterRequest(model, endpoint, health check, adapter, capabilities)
   example_3.py ──────────────────────────────────────────────► Gateway ──► LLMs service (model registry)
-                                                                                      ┆ (planned)
+                                                                                      │
                                                                                       ▼
                                                                           Ollama on localhost:11434
 ```
@@ -126,17 +126,26 @@ After registering the model, the example queries it like any other model:
 - `get_llm_capabilities(GetLLMCapabilitiesRequest(model=...))` returns its capabilities
 - `list_registered_llms(...)` lists the registered models and `list_llms(...)` all the models of the platform
 
-Finally, the example refreshes the client's cached providers with `get_llm_providers()`. Once the platform
-lists `ollama`, the new provider is used exactly like the built-in ones: the example sends it the same request
-as OpenAI and Anthropic, blocking and streamed.
+Finally, the example refreshes the client's cached providers with `get_llm_providers()`, which now lists
+`ollama` with its model. From then on the new provider is used exactly like the built-in ones: the example sends
+it the same request as OpenAI and Anthropic, blocking and streamed.
 
-### Current limitations
+### How the platform handles a registration
 
-Registering a model is not yet wired into the LLMs service: the platform acknowledges the registration but does
-not store it, the status, capabilities and model listings are placeholders, and requests are not routed to
-registered models. Until then, `ollama` does not appear in the providers, and the example logs a warning
-instead of sending it the request. The client code in this example does not need to change once the platform
-supports it.
+- **Storage**: the registration is stored in the platform's database, so it survives restarts and every
+  replica of the LLMs service can route to the model. Registering a model with the name of an already
+  registered model updates its registration.
+- **Routing**: requests are routed to a registered model by its provider and model name, through the adapter
+  named by `adapter_type`. Ollama (`ollama`) is currently the only supported adapter. If `adapter_type` is
+  empty, the provider name is used as the adapter type.
+- **Validation**: the platform rejects registrations under a built-in provider (`openai`, `anthropic`), with
+  the name of a built-in model, with an unsupported adapter, or with an endpoint or health check that is not an
+  `http(s)` URL.
+- **Status**: `get_llm_status` calls the model's health check. The model is `healthy` if it answers with a 2xx
+  status, `unhealthy` otherwise, and `registered` if it has no health check.
+- **Reachability**: the endpoint must be reachable from the LLMs service, not just from your machine. When the
+  platform runs in Docker or Kubernetes, `localhost` is the service's own container; use an address the service
+  can reach instead, e.g. `http://host.docker.internal:11434` for an Ollama running on the Docker host.
 
 ## Driver code
 
@@ -292,16 +301,11 @@ def add_ollama_provider(platform: Gogi) -> None:
     rich_print(f"List LLMs response {list_response}")
 
     # The client caches the providers, so refresh them to pick up the new one.
-    # Once the platform routes requests to registered models, the new provider
-    # is used exactly like the built-in ones.
+    # From now on the new provider is used exactly like the built-in ones
     platform.llm_clients.get_llm_providers()
-    if OLLAMA_PROVIDER in platform.llm_clients.providers:
-        run_provider(platform, OLLAMA_PROVIDER, OLLAMA_MODEL)
-    else:
-        logger.warning(
-            f"The platform does not route requests to the {OLLAMA_PROVIDER} provider yet; "
-            f"available providers are {platform.llm_clients.providers}"
-        )
+    rich_print(f"Platform providers {platform.llm_clients.providers}")
+
+    run_provider(platform, OLLAMA_PROVIDER, OLLAMA_MODEL)
 
 
 if __name__ == "__main__":

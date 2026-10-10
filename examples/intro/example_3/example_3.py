@@ -147,16 +147,11 @@ def add_ollama_provider(platform: Gogi) -> None:
     rich_print(f"List LLMs response {list_response}")
 
     # The client caches the providers, so refresh them to pick up the new one.
-    # Once the platform routes requests to registered models, the new provider
-    # is used exactly like the built-in ones.
+    # From now on the new provider is used exactly like the built-in ones
     platform.llm_clients.get_llm_providers()
-    if OLLAMA_PROVIDER in platform.llm_clients.providers:
-        run_provider(platform, OLLAMA_PROVIDER, OLLAMA_MODEL)
-    else:
-        logger.warning(
-            f"The platform does not route requests to the {OLLAMA_PROVIDER} provider yet; "
-            f"available providers are {platform.llm_clients.providers}"
-        )
+    rich_print(f"Platform providers {platform.llm_clients.providers}")
+
+    run_provider(platform, OLLAMA_PROVIDER, OLLAMA_MODEL)
 
 
 if __name__ == "__main__":
