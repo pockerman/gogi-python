@@ -1,6 +1,7 @@
 import hashlib
 import json
 import re
+from collections.abc import Callable
 from typing import Any
 
 from gogi.clients.base_client import BaseClient
@@ -8,6 +9,7 @@ from gogi.clients.grpc_helpers.llm_tools_client_grpc_helpers import (
     LLMToolsClientGRPCHelper,
 )
 from gogi.models.llm.llm_function_definition import LLMFunctionDefinition
+from gogi.models.llm.llm_message import LLMMessage
 from gogi.models.llm.llm_tool_definition import LLMToolCall, LLMToolDefinition
 from gogi.models.llm.llm_tool_service_definition import (
     LLMCostMetadata,
@@ -101,6 +103,15 @@ def model_function_name(tool_name: str) -> str:
         digest = hashlib.sha256(tool_name.encode()).hexdigest()[:8]
         name = name[: _MAX_FUNCTION_NAME_LENGTH - len(digest) - 1] + "_" + digest
     return name
+
+
+def tool_result_message(tool_call: LLMToolCall, response: LLMExecuteToolResponse) -> LLMMessage:
+    """Return the message that gives a model the result of one of its tool calls.
+
+    The content is the tool's result, or, if the call failed, ``{"error": ...}``.
+    """
+    content = response.result_json if response.success else json.dumps({"error": response.error})
+    return LLMMessage.tool_result(tool_call, content or "{}")
 
 
 class LLMToolsClient(BaseClient):
@@ -239,14 +250,15 @@ class LLMToolsClient(BaseClient):
 
         Returns the definitions, to pass as the ``tools`` of an ``LLMRunRequest``, and a mapping
         from the function name of each tool, which a model uses in its tool calls, to the tool's
-        name (see :func:`model_function_name`). :meth:`execute_tool_call` uses that mapping to run
-        the tool a model calls.
+        name and version, e.g. ``healthcare.scheduling.book_appointment@1.0.0`` (see
+        :func:`model_function_name`). :meth:`execute_tool_call` uses that mapping to run the version
+        of the tool whose definition the model was given.
         """
         definitions: list[LLMToolDefinition] = []
         tool_names: dict[str, str] = {}
         for tool in self.discover(namespace, capabilities, tags, read_only, version_constraint):
             function_name = model_function_name(tool.name)
-            tool_names[function_name] = tool.name
+            tool_names[function_name] = f"{tool.name}@{tool.version}" if tool.version else tool.name
             definitions.append(
                 LLMToolDefinition(
                     tool_type="function",
@@ -321,15 +333,43 @@ class LLMToolsClient(BaseClient):
         session_id: str = "",
         confirmed: bool = False,
     ) -> LLMExecuteToolResponse:
-        """Run the tool a model called, given the mapping returned by :meth:`build_model_tools`."""
-        name = tool_names.get(tool_call.function.name)
-        if name is None:
+        """Run the tool a model called, given the mapping returned by :meth:`build_model_tools`.
+
+        The mapping's values are tool names, optionally with the version to run, as in
+        ``healthcare.scheduling.book_appointment@1.0.0``.
+        """
+        tool = tool_names.get(tool_call.function.name)
+        if tool is None:
             return LLMExecuteToolResponse(success=False, error=f"unknown tool {tool_call.function.name}")
+        name, _, version = tool.partition("@")
         return self.execute_tool(
             LLMExecuteToolRequest(
                 tool_name=name,
                 arguments_json=tool_call.function.arguments or "{}",
                 session_id=session_id,
+                version=version,
                 confirmed=confirmed,
             )
         )
+
+    def execute_tool_calls(
+        self,
+        tool_calls: list[LLMToolCall] | None,
+        tool_names: dict[str, str],
+        *,
+        session_id: str = "",
+        confirm: Callable[[LLMToolCall], bool] | None = None,
+    ) -> list[LLMMessage]:
+        """Run the tools a model called and return the messages with their results.
+
+        Add the returned ``tool`` messages to the conversation, after the model's message with the
+        calls (:meth:`LLMRunResponse.to_message`), and run the model again. ``confirm`` is asked
+        about each call, e.g. by asking a person; a tool whose behavior requires confirmation runs
+        only if it returns true. A failed call is a result too, so that the model can react to it.
+        """
+        messages = []
+        for tool_call in tool_calls or []:
+            confirmed = confirm(tool_call) if confirm is not None else False
+            response = self.execute_tool_call(tool_call, tool_names, session_id=session_id, confirmed=confirmed)
+            messages.append(tool_result_message(tool_call, response))
+        return messages

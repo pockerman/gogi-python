@@ -26,6 +26,7 @@ from gogi.models.llm.responses.list_registered_llms_response import (
 from gogi.models.llm.responses.llm_capabilities_response import LLMCapabilitiesResponse
 from gogi.models.llm.responses.llm_status_response import LLMStatusResponse
 from gogi.v1 import (
+    llm_function_pb2,
     llm_message_pb2,
     llm_model_service_pb2,
     llm_tool_pb2,
@@ -47,8 +48,26 @@ class LLMModelsClientGRPCHelper:
             raise ValueError(f"Provider={request.config.provider} does not support model {request.config.model}")
 
     @staticmethod
+    def request_message_to_grpc_message(msg: LLMMessage) -> llm_message_pb2.LLMMessage:
+        return llm_message_pb2.LLMMessage(
+            role=msg.role,
+            content=msg.content,
+            tool_calls=[
+                llm_tool_pb2.ToolCall(
+                    id=call.idx,
+                    type=call.tool_type,
+                    function=llm_tool_pb2.ToolCallFunction(name=call.function.name, arguments=call.function.arguments),
+                )
+                for call in msg.tool_calls
+            ],
+            tool_call_id=msg.tool_call_id,
+            name=msg.name,
+            timestamp=msg.timestamp,
+        )
+
+    @staticmethod
     def request_messages_to_grpc_messages(messages: list[LLMMessage]) -> list[llm_message_pb2.LLMMessage]:
-        return [llm_message_pb2.LLMMessage(role=msg.role, content=msg.content) for msg in messages]
+        return [LLMModelsClientGRPCHelper.request_message_to_grpc_message(msg) for msg in messages]
 
     @staticmethod
     def request_config_to_grpc_request_config(config: LLMRunRequestConfig) -> llm_model_service_pb2.LLMRunRequestConfig:
@@ -65,11 +84,17 @@ class LLMModelsClientGRPCHelper:
 
     @staticmethod
     def request_tools_to_grpcs_tools(tools: list[LLMToolDefinition]) -> list[llm_tool_pb2.ToolDefinition]:
-        return (
-            [llm_tool_pb2.ToolDefinition(type=tool.tool_type, function=tool.function) for tool in tools]
-            if tools
-            else []
-        )
+        return [
+            llm_tool_pb2.ToolDefinition(
+                type=tool.tool_type,
+                function=llm_function_pb2.LLMFunctionDefinition(
+                    name=tool.function.name,
+                    description=tool.function.description,
+                    parameters_json=tool.function.parameters_json,
+                ),
+            )
+            for tool in tools or []
+        ]
 
     @staticmethod
     def build_grpc_request(req: LLMRunRequest) -> llm_model_service_pb2.LLMRunRequest:

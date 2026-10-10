@@ -83,6 +83,7 @@ class LLMModelsClient(BaseClient):
                     model=chunk.model,
                     finish_reason=chunk.finish_reason if chunk.HasField("finish_reason") else None,
                     usage=usage,
+                    tool_calls=self._grpc_helper.grpc_tool_calls_to_tool_call(chunk.tool_calls),
                 )
             return  # stream completed successfully
         except grpc.RpcError as e:

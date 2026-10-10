@@ -9,15 +9,19 @@ from gogi.clients.grpc_helpers.llm_models_client_grpc_helpers import (
 from gogi.clients.llm_models_client import LLMModelsClient
 from gogi.models import (
     LLMCapabilities,
+    LLMFunctionDefinition,
+    LLMMessage,
     LLMModelInfo,
     LLMRegisterRequest,
     LLMRunRequest,
     LLMRunRequestConfig,
     LLMTokenUsage,
     LLMToolCall,
+    LLMToolDefinition,
     ToolCallFunction,
 )
-from gogi.v1 import llm_model_service_pb2
+from gogi.models.llm.responses.llm_run_response import LLMRunResponse
+from gogi.v1 import llm_model_service_pb2, llm_tool_pb2
 
 
 @pytest.fixture
@@ -347,3 +351,96 @@ def test_serialize_registered_llms_with_credential_ref():
 
     assert response.models[0].credential_ref == "ml-inference-prod"
     assert response.models[0].status == "provisioning"
+
+
+# ---------------------------------------------------------------------------
+# tool calling
+# ---------------------------------------------------------------------------
+
+
+def _calendar_call() -> LLMToolCall:
+    return LLMToolCall(
+        idx="call-1",
+        tool_type="function",
+        function=ToolCallFunction(name="calendar", arguments='{"date": "2026-06-14"}'),
+    )
+
+
+def test_build_grpc_request_with_tools_and_tool_messages():
+    request = LLMRunRequest(
+        config=LLMRunRequestConfig(provider="openai", model="gpt-4o"),
+        messages=[
+            LLMMessage(role="user", content="Am I free on 2026-06-14?"),
+            LLMMessage(role="assistant", tool_calls=[_calendar_call()]),
+            LLMMessage.tool_result(_calendar_call(), '{"events": []}'),
+        ],
+        tools=[
+            LLMToolDefinition(
+                tool_type="function",
+                function=LLMFunctionDefinition(
+                    name="calendar", description="Events on a date", parameters_json='{"type": "object"}'
+                ),
+            )
+        ],
+    )
+
+    grpc_request = LLMModelsClientGRPCHelper.build_grpc_request(request)
+
+    assert len(grpc_request.tools) == 1
+    tool = grpc_request.tools[0]
+    assert tool.type == "function"
+    assert tool.function.name == "calendar"
+    assert tool.function.description == "Events on a date"
+    assert tool.function.parameters_json == '{"type": "object"}'
+
+    user, assistant, result = grpc_request.messages
+    assert user.content == "Am I free on 2026-06-14?"
+    assert not user.HasField("tool_call_id")
+    # an assistant message that only calls tools has no content
+    assert not assistant.HasField("content")
+    assert assistant.tool_calls[0].id == "call-1"
+    assert assistant.tool_calls[0].type == "function"
+    assert assistant.tool_calls[0].function.name == "calendar"
+    assert assistant.tool_calls[0].function.arguments == '{"date": "2026-06-14"}'
+    assert result.role == "tool"
+    assert result.tool_call_id == "call-1"
+    assert result.name == "calendar"
+    assert result.content == '{"events": []}'
+
+
+def test_run_response_to_message():
+    response = LLMRunResponse(content="", model="gpt-4o", provider="openai", tool_calls=[_calendar_call()])
+
+    message = response.to_message()
+
+    assert message.role == "assistant"
+    assert message.content is None
+    assert message.tool_calls == [_calendar_call()]
+    assert LLMRunResponse(content="Hi", model="m", provider="p").to_message().content == "Hi"
+
+
+def test_run_stream_returns_tool_calls(client, llm_request, monkeypatch):
+    monkeypatch.setattr(client._grpc_helper, "build_grpc_request", lambda req: MagicMock())
+    chunks = [
+        llm_model_service_pb2.LLMStreamChunkResponse(token="Checking", model="gpt-4o"),
+        llm_model_service_pb2.LLMStreamChunkResponse(
+            model="gpt-4o",
+            finish_reason="tool_calls",
+            tool_calls=[
+                llm_tool_pb2.ToolCall(
+                    id="call-1",
+                    type="function",
+                    function=llm_tool_pb2.ToolCallFunction(name="calendar", arguments='{"date": "2026-06-14"}'),
+                )
+            ],
+        ),
+    ]
+    client._stub = MagicMock()
+    client._stub.RunStream.return_value = iter(chunks)
+
+    received = list(client.run_stream(llm_request))
+
+    assert received[0].token == "Checking"
+    assert received[0].tool_calls == []
+    assert received[1].finish_reason == "tool_calls"
+    assert received[1].tool_calls == [_calendar_call()]

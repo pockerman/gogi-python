@@ -10,6 +10,7 @@ from gogi.clients.llm_tools_client import (
     LLMToolsClient,
     model_function_name,
     parameters_schema,
+    tool_result_message,
 )
 from gogi.models.llm.llm_tool_definition import LLMToolCall, ToolCallFunction
 from gogi.models.llm.llm_tool_service_definition import LLMToolBehavior
@@ -17,6 +18,9 @@ from gogi.models.llm.requests.llm_tools.llm_execute_tool_request import (
     LLMExecuteToolRequest,
 )
 from gogi.models.llm.requests.llm_tools.llm_get_task_request import LLMGetTaskRequest
+from gogi.models.llm.responses.llm_tools.llm_execute_tool_response import (
+    LLMExecuteToolResponse,
+)
 from gogi.v1 import llm_tool_pb2, llm_tool_service_pb2
 
 
@@ -140,7 +144,7 @@ def test_build_model_tools(client):
     assert definitions[0].function.name == "healthcare__scheduling__book_appointment"
     assert definitions[0].function.description == "Book an appointment slot for a patient"
     assert json.loads(definitions[0].function.parameters_json)["properties"] == {"slot_id": {"type": "string"}}
-    assert tool_names == {"healthcare__scheduling__book_appointment": "healthcare.scheduling.book_appointment"}
+    assert tool_names == {"healthcare__scheduling__book_appointment": "healthcare.scheduling.book_appointment@1.0.0"}
 
 
 # ---------------------------------------------------------------------------
@@ -239,3 +243,77 @@ def test_execute_tool_call(client):
     response = client.execute_tool_call(unknown, tool_names)
     assert response.success is False
     assert response.error == "unknown tool other"
+
+
+def test_execute_tool_call_pins_the_version(client):
+    client._stub.ExecuteTool.return_value = llm_tool_service_pb2.ExecuteToolResponse(success=True, result_json="{}")
+    tool_names = {"healthcare__scheduling__book_appointment": "healthcare.scheduling.book_appointment@1.0.0"}
+
+    tool_call = LLMToolCall(
+        idx="call-1",
+        tool_type="function",
+        function=ToolCallFunction(name="healthcare__scheduling__book_appointment", arguments=""),
+    )
+    client.execute_tool_call(tool_call, tool_names)
+
+    grpc_request = client._stub.ExecuteTool.call_args.args[0]
+    assert grpc_request.tool_name == "healthcare.scheduling.book_appointment"
+    assert grpc_request.version == "1.0.0"
+    assert grpc_request.arguments_json == "{}"
+
+
+def _tool_call(idx: str, name: str, arguments: str = "{}") -> LLMToolCall:
+    return LLMToolCall(idx=idx, tool_type="function", function=ToolCallFunction(name=name, arguments=arguments))
+
+
+def test_tool_result_message():
+    call = _tool_call("call-1", "healthcare__scheduling__check_availability")
+
+    message = tool_result_message(call, LLMExecuteToolResponse(success=True, result_json='{"slots": []}'))
+    assert message.role == "tool"
+    assert message.tool_call_id == "call-1"
+    assert message.name == "healthcare__scheduling__check_availability"
+    assert message.content == '{"slots": []}'
+
+    # a failure is a result the model can react to
+    message = tool_result_message(call, LLMExecuteToolResponse(success=False, error="rate limit exceeded"))
+    assert json.loads(message.content) == {"error": "rate limit exceeded"}
+
+
+def test_execute_tool_calls(client):
+    client._stub.ExecuteTool.side_effect = [
+        llm_tool_service_pb2.ExecuteToolResponse(success=True, result_json='{"slots": ["09:00"]}'),
+        llm_tool_service_pb2.ExecuteToolResponse(success=False, error="the tool requires confirmation"),
+    ]
+    tool_names = {
+        "healthcare__scheduling__check_availability": "healthcare.scheduling.check_availability@1.0.0",
+        "healthcare__scheduling__book_appointment": "healthcare.scheduling.book_appointment@1.0.0",
+    }
+    calls = [
+        _tool_call("call-1", "healthcare__scheduling__check_availability"),
+        _tool_call("call-2", "healthcare__scheduling__book_appointment", '{"slot": "09:00"}'),
+    ]
+    asked = []
+
+    def confirm(call: LLMToolCall) -> bool:
+        asked.append(call.idx)
+        return False
+
+    messages = client.execute_tool_calls(calls, tool_names, session_id="session-1", confirm=confirm)
+
+    assert asked == ["call-1", "call-2"]
+    assert [message.tool_call_id for message in messages] == ["call-1", "call-2"]
+    assert messages[0].content == '{"slots": ["09:00"]}'
+    assert json.loads(messages[1].content) == {"error": "the tool requires confirmation"}
+
+    requests = [call.args[0] for call in client._stub.ExecuteTool.call_args_list]
+    assert [request.tool_name for request in requests] == [
+        "healthcare.scheduling.check_availability",
+        "healthcare.scheduling.book_appointment",
+    ]
+    assert all(request.session_id == "session-1" and not request.confirmed for request in requests)
+
+
+def test_execute_tool_calls_without_calls(client):
+    assert client.execute_tool_calls(None, {}) == []
+    client._stub.ExecuteTool.assert_not_called()
