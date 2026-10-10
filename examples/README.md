@@ -51,3 +51,15 @@ End-to-end agents that combine several services, in [`agents/`](agents).
 | Example                                                       | What it shows                                                                                        |
 |---------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
 | [Text summarization agent](agents/summarization/example.md)  | Upload a document, ingest it with a workflow, and summarize it with a RAG pipeline. Uses indexes, prompts, models, workflows and documents |
+
+## Updating the intro examples
+
+Each intro example's markdown file ends with a "Driver code" section, a copy of the example's code. After
+changing an example's code, regenerate these sections from the repository root:
+
+```bash
+python scripts/update_driver_code.py
+```
+
+`python scripts/update_driver_code.py --check` changes nothing and exits with 1 if any section is out of date,
+which is useful in CI.
