@@ -30,7 +30,7 @@ class LLMExecutionLimits(BaseModel):
 
 class LLMToolServiceDefinition(BaseModel):
     name: str
-    version: str
+    version: str = "1.0.0"
     owner: str = ""
     description: str = ""
     parameters_json: str = ""

@@ -35,7 +35,7 @@ Short examples, one per client, in [`intro/`](intro).
 | [Example 3](intro/example_3/example_3.md)      | `LLMModelsClient` (`platform.llm_clients`)  | Send the same request to OpenAI and Anthropic (blocking and streamed); add Ollama as a new provider by registering a model |
 | [Example 4](intro/example_4/example_4.md)      | `PromptsClient` (`platform.prompts`)        | Register, retrieve and delete a prompt with its metadata                         |
 | [Example 5](intro/example_5/example_5.md)      | `LLMSessionsClient` (`platform.llm_session`)| Manage conversation sessions, their messages and memory                          |
-| [Example 6](intro/example_6/example_6.md)      | `LLMToolsClient` (`platform.tools`)         | Register, discover, validate and execute tools; register an MCP server           |
+| [Example 6](intro/example_6/example_6.md)      | `LLMToolsClient` (`platform.tools`)         | Register a clinic's tools; discover, validate and execute them with injected credentials, confirmation and async tasks; version them; build model function definitions; import an MCP server |
 | [Example 7](intro/example_7/example_7.md)      | `GuardrailsClient` (`platform.guardrails`)  | Validate input, filter output, check policies and report violations              |
 
 Run an example from the repository root, e.g.
