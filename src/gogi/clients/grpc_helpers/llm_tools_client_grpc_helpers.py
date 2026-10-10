@@ -219,6 +219,8 @@ class LLMToolsClientGRPCHelper:
             tool_name=request.tool_name,
             arguments_json=request.arguments_json,
             session_id=request.session_id,
+            version=request.version,
+            confirmed=request.confirmed,
         )
 
     @staticmethod
@@ -230,6 +232,7 @@ class LLMToolsClientGRPCHelper:
             result_json=grpc_response.result_json,
             error=grpc_response.error,
             execution_time_ms=grpc_response.execution_time_ms,
+            tool_version=grpc_response.tool_version,
         )
 
     # --- ValidateTool ---
@@ -239,6 +242,7 @@ class LLMToolsClientGRPCHelper:
         return llm_tool_service_pb2.ValidateToolRequest(
             tool_name=request.tool_name,
             arguments_json=request.arguments_json,
+            version=request.version,
         )
 
     @staticmethod
