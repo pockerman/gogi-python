@@ -10,3 +10,4 @@ class RegisteredLLM(BaseModel):
     status: str
     registered_at: str
     adapter_type: str
+    credential_ref: str = ""
