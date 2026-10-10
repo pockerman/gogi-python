@@ -12,9 +12,11 @@ from loguru import logger
 from rich import print as rich_print
 
 from gogi.gogi import Gogi
-from gogi.models.index_config import IndexConfig
 from gogi.models.ingest_document import IngestDocumentRequest
 from gogi.utils.document_ingestion_polling import wait_for_document_ingest
+
+OWNER_NAME = "user-123"
+INDEX_NAME = "my-first-doc-index"
 
 
 def create_temp_document(filename: str) -> bytes:
@@ -64,35 +66,26 @@ if __name__ == "__main__":
     # give you access to all of the available clients (indexes, documents, and queries).
     platform = Gogi(gateway_url="localhost:50051", logger=logger)
 
-    # list indexes for a user
-    response = platform.indexes.list_indexes(owner_name="user-123")
-    rich_print(f"List indexes response: {response}")
+    # list the indexes of the owner
+    indexes = platform.indexes.list_owner_indexes(owner_name=OWNER_NAME)
+    rich_print(f"List indexes response: {indexes}")
 
     # create a new index.
-    # Documets can only be ingested into existing indexes,
+    # Documents can only be ingested into existing indexes,
     # so this is a necessary step before we can add any documents.
-    index_config = IndexConfig(
-        name="my-first-doc-index",
-        embedding_model="text-embedding-3-small",
-        embedding_dimensions=756,
-        chunking_strategy="overlap",
-        chunk_size=500,
-        chunk_overlap=50,
-        metadata_schema={"source": "pdf", "author": "John Doe"},
-    )
-
-    # create the index
-    response = platform.indexes.create_index(owner_name="user-123", config=index_config)
-    rich_print(f"Create index response: {response}")
+    # An index only has a name and an owner; how its documents are chunked and
+    # embedded is set per document when the document is ingested (see below).
+    index = platform.indexes.create_index(index_name=INDEX_NAME, owner_name=OWNER_NAME)
+    rich_print(f"Create index response: {index}")
 
     # get the index we just created
-    response = platform.indexes.get_index(index_name=response.name)
-    rich_print(f"Get index response: {response}")
+    index = platform.indexes.get_index(index_name=index.index_name)
+    rich_print(f"Get index response: {index}")
 
     # list the documents associated with the index.
     # we shouldn't have any documents yet, so this should return an empty list.
-    response = platform.documents.list_documents(index_name=response.name)
-    rich_print(f"List documents response: {response}")
+    documents = platform.documents.list_documents(index_name=index.index_name)
+    rich_print(f"List documents response: {documents}")
 
     doc_content = create_temp_document("my_first_doc.txt")
 
@@ -101,7 +94,7 @@ if __name__ == "__main__":
     ingest_request = IngestDocumentRequest(
         content=doc_content,
         content_type="UNKNOWN",
-        index_name=index_config.name,
+        index_name=index.index_name,
         document_id=uuid.uuid4().hex,
         filename="my_first_doc.txt",
         embeddings_model="clip",
@@ -127,16 +120,16 @@ if __name__ == "__main__":
     result = wait_for_document_ingest(platform=platform, job_id=response.job_id, poll_interval=5, timeout=300)
     rich_print(f"Ingest document response: {result}")
 
-    # response = platform.documents.get_document(index_name=response[0].index_name,
-    #                                            document_id=response[0].document_id)
-    # rich_print(f"Get document response: {response}")
+    # document = platform.documents.get_document(index_name=result.index_name,
+    #                                             document_id=result.document_id)
+    # rich_print(f"Get document response: {document}")
 
     # # delete a document
-    # response = platform.documents.delete_document(index_name=response.index_name,
-    #                                               document_id=response.document_id)
-    # rich_print(f"Delete document response: {response}")
+    # deleted = platform.documents.delete_document(index_name=document.index_name,
+    #                                              document_id=document.document_id)
+    # rich_print(f"Delete document response: {deleted}")
 
     # # finally, delete the index we created.
     # # This will also delete all documents contained within the index, so use with caution!
-    # response = platform.indexes.delete_index(index_name=index_config.name)
-    # rich_print(f"Delete index response: {response}")
+    # deleted = platform.indexes.delete_index(index_name=index.index_name)
+    # rich_print(f"Delete index response: {deleted}")
