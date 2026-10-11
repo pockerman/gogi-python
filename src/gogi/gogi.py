@@ -6,6 +6,7 @@ from gogi.clients.indexes_client import IndexesClient
 from gogi.clients.llm_models_client import LLMModelsClient
 from gogi.clients.llm_sessions_client import LLMSessionsClient
 from gogi.clients.llm_tools_client import LLMToolsClient
+from gogi.clients.observability_client import ObservabilityClient
 from gogi.clients.prompts_client import PromptsClient
 from gogi.clients.workflow_client import WorkflowClient
 
@@ -38,6 +39,7 @@ class Gogi:
         self._llm_models: LLMModelsClient | None = None
         self._prompts: PromptsClient | None = None
         self._guardrails: GuardrailsClient | None = None
+        self._observability: ObservabilityClient | None = None
         self._tools: LLMToolsClient | None = None
         self._evaluation = None
         self._workflows: WorkflowClient | None = None
@@ -77,6 +79,12 @@ class Gogi:
         if not self._tools:
             self._tools = LLMToolsClient(platform=self, logger=self.logger)
         return self._tools
+
+    @property
+    def observability(self) -> ObservabilityClient:
+        if not self._observability:
+            self._observability = ObservabilityClient(platform=self, logger=self.logger)
+        return self._observability
 
     @property
     def guardrails(self) -> GuardrailsClient:

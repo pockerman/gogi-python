@@ -3,6 +3,7 @@ import os
 import grpc
 
 from gogi.utils.retry_interceptor import RetryInterceptor
+from gogi.utils.trace_context import trace_metadata
 
 
 def _use_insecure_channel(gateway_url: str) -> bool:
@@ -39,4 +40,5 @@ class BaseClient:
 
     @property
     def route_metadata(self) -> tuple[tuple[str, str], ...]:
-        return self._route_metadata
+        # inside a trace, calls carry it, so the platform's spans nest under the application's
+        return self._route_metadata + trace_metadata()
