@@ -1,4 +1,5 @@
 from .llm.llm_capabilities import LLMCapabilities
+from .llm.llm_fallback_config import LLMFallbackConfig, LLMFallbackModel, LLMRetryConfig
 from .llm.llm_function_definition import LLMFunctionDefinition
 from .llm.llm_message import LLMMessage
 from .llm.llm_model_info import LLMModelInfo

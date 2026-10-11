@@ -2,6 +2,7 @@ import uuid
 from unittest.mock import MagicMock
 
 import pytest
+from pydantic import ValidationError
 
 from gogi.clients.grpc_helpers.llm_models_client_grpc_helpers import (
     LLMModelsClientGRPCHelper,
@@ -9,10 +10,13 @@ from gogi.clients.grpc_helpers.llm_models_client_grpc_helpers import (
 from gogi.clients.llm_models_client import LLMModelsClient
 from gogi.models import (
     LLMCapabilities,
+    LLMFallbackConfig,
+    LLMFallbackModel,
     LLMFunctionDefinition,
     LLMMessage,
     LLMModelInfo,
     LLMRegisterRequest,
+    LLMRetryConfig,
     LLMRunRequest,
     LLMRunRequestConfig,
     LLMTokenUsage,
@@ -444,3 +448,83 @@ def test_run_stream_returns_tool_calls(client, llm_request, monkeypatch):
     assert received[0].tool_calls == []
     assert received[1].finish_reason == "tool_calls"
     assert received[1].tool_calls == [_calendar_call()]
+
+
+# ---------------------------------------------------------------------------
+# fallback
+# ---------------------------------------------------------------------------
+
+
+def test_build_grpc_request_without_fallback(llm_request):
+    grpc_request = LLMModelsClientGRPCHelper.build_grpc_request(req=llm_request)
+
+    # the platform's defaults apply
+    assert not grpc_request.config.HasField("fallback")
+
+
+def test_build_grpc_request_with_fallback(llm_request):
+    llm_request.config.fallback = LLMFallbackConfig(
+        models=[LLMFallbackModel(provider="openai", model="gpt-4o")],
+        retry=LLMRetryConfig(max_retries=1),
+    )
+
+    fallback = LLMModelsClientGRPCHelper.build_grpc_request(req=llm_request).config.fallback
+
+    # not set means enabled
+    assert not fallback.HasField("enabled")
+    assert [(m.provider, m.model) for m in fallback.models] == [("openai", "gpt-4o")]
+    assert fallback.retry.HasField("max_retries")
+    assert fallback.retry.max_retries == 1
+    # the platform's defaults apply to the values not given
+    assert not fallback.retry.HasField("initial_delay_ms")
+    assert not fallback.retry.HasField("max_delay_ms")
+
+
+def test_build_grpc_request_with_fallback_disabled(llm_request):
+    llm_request.config.fallback = LLMFallbackConfig(enabled=False, retry=LLMRetryConfig(max_retries=0))
+
+    fallback = LLMModelsClientGRPCHelper.build_grpc_request(req=llm_request).config.fallback
+
+    # False and 0 must reach the platform, not be taken for "not set"
+    assert fallback.HasField("enabled")
+    assert fallback.enabled is False
+    assert fallback.retry.HasField("max_retries")
+    assert fallback.retry.max_retries == 0
+    assert list(fallback.models) == []
+
+
+def test_fallback_config_validation():
+    with pytest.raises(ValidationError):
+        LLMFallbackConfig(models=[LLMFallbackModel(provider="openai", model=f"m-{i}") for i in range(6)])
+    with pytest.raises(ValidationError):
+        LLMFallbackModel(provider="", model="gpt-4o")
+    with pytest.raises(ValidationError):
+        LLMRetryConfig(max_retries=-1)
+
+
+def test_run_returns_the_provider_that_answered(client, llm_request, monkeypatch):
+    llm_request.config.fallback = LLMFallbackConfig(models=[LLMFallbackModel(provider="openai", model="gpt-4o")])
+    client._stub = MagicMock()
+    client._stub.Run.return_value = llm_model_service_pb2.LLMRunResponse(
+        content="Hi", model="gpt-4o", provider="openai", finish_reason="stop"
+    )
+
+    response = client.run(llm_request)
+
+    sent = client._stub.Run.call_args.args[0]
+    assert sent.config.fallback.models[0].model == "gpt-4o"
+    assert (response.provider, response.model) == ("openai", "gpt-4o")
+
+
+def test_run_stream_returns_the_provider(client, llm_request):
+    client._stub = MagicMock()
+    client._stub.RunStream.return_value = iter(
+        [
+            llm_model_service_pb2.LLMStreamChunkResponse(token="Hi", model="gpt-4o", provider="openai"),
+            llm_model_service_pb2.LLMStreamChunkResponse(model="gpt-4o", provider="openai", finish_reason="stop"),
+        ]
+    )
+
+    received = list(client.run_stream(llm_request))
+
+    assert [chunk.provider for chunk in received] == ["openai", "openai"]

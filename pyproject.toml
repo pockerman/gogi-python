@@ -27,6 +27,11 @@ line-length = 120
 [tool.ruff.lint]
 select = ["E", "F", "I", "C4"]
 
+[tool.ruff.lint.isort]
+# the generated gogi.v1 code is not checked in, so without this ruff takes it for
+# third-party where it is not generated, e.g. in CI, and first-party where it is
+known-first-party = ["gogi"]
+
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 

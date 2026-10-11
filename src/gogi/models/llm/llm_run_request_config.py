@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from gogi.models.llm.llm_fallback_config import LLMFallbackConfig
+
 
 class LLMRunRequestConfig(BaseModel):
     model: str
@@ -11,3 +13,6 @@ class LLMRunRequestConfig(BaseModel):
     frequency_penalty: float | None = None
     presence_penalty: float | None = None
     system_prompt_name: str | None = None
+    # how failed calls are retried and which models are tried if the model fails;
+    # None applies the platform's defaults
+    fallback: LLMFallbackConfig | None = None

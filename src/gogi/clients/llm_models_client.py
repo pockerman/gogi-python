@@ -81,6 +81,7 @@ class LLMModelsClient(BaseClient):
                 yield LLMRunStreamChunk(
                     token=chunk.token,
                     model=chunk.model,
+                    provider=chunk.provider,
                     finish_reason=chunk.finish_reason if chunk.HasField("finish_reason") else None,
                     usage=usage,
                     tool_calls=self._grpc_helper.grpc_tool_calls_to_tool_call(chunk.tool_calls),
