@@ -65,12 +65,12 @@ class GuardrailsClient(BaseClient):
     ) -> AddPolicyResponse:
         """Adds a policy, or replaces the policy with the same name.
 
-        Pass a GuardrailPolicy, or its fields as keywords, as in the book's listing 6.21:
+        Pass a GuardrailPolicy, or its fields as keywords:
 
             platform.guardrails.add_policy(
-                name="patient-intake-input",
+                name="travel-desk-input",
                 type="input",
-                application_id="patient-intake",
+                application_id="travel-desk",
                 rules=[{"type": "prompt_injection", "action": "block"}],
             )
 
