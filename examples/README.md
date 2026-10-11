@@ -38,6 +38,7 @@ Short examples, one per client, in [`intro/`](intro).
 | [Example 6](intro/example_6/example_6.md)      | `LLMToolsClient` (`platform.tools`)         | Register a clinic's tools; discover, validate and execute them with injected credentials, confirmation and async tasks; version them; build model function definitions; import an MCP server |
 | [Example 7](intro/example_7/example_7.md)      | `GuardrailsClient` (`platform.guardrails`)  | Validate input, filter output, check policies and report violations              |
 | [Example 8](intro/example_8/example_8.md)      | `LLMModelsClient`, `LLMToolsClient`         | A model calls the platform's tools: the agent loop, with confirmation of tool calls and streamed tool calls |
+| [Example 9](intro/example_9/example_9.md)      | `LLMModelsClient` (`platform.llm_clients`)  | Resilient calls: the platform retries failed calls and falls back to other models; the circuit breaker |
 
 Run an example from the repository root, e.g.
 

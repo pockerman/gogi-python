@@ -1,6 +1,7 @@
 from typing import Any
 
 from gogi.models.llm.llm_capabilities import LLMCapabilities
+from gogi.models.llm.llm_fallback_config import LLMFallbackConfig
 from gogi.models.llm.llm_message import LLMMessage
 from gogi.models.llm.llm_model_info import LLMModelInfo
 from gogi.models.llm.llm_run_request_config import LLMRunRequestConfig
@@ -80,6 +81,29 @@ class LLMModelsClientGRPCHelper:
             frequency_penalty=config.frequency_penalty,
             presence_penalty=config.presence_penalty,
             system_prompt_name=config.system_prompt_name,
+            fallback=LLMModelsClientGRPCHelper.fallback_config_to_grpc(fallback=config.fallback),
+        )
+
+    @staticmethod
+    def fallback_config_to_grpc(fallback: LLMFallbackConfig | None) -> llm_model_service_pb2.FallbackConfig | None:
+        if fallback is None:
+            return None
+
+        retry = None
+        if fallback.retry is not None:
+            retry = llm_model_service_pb2.RetryConfig(
+                max_retries=fallback.retry.max_retries,
+                initial_delay_ms=fallback.retry.initial_delay_ms,
+                max_delay_ms=fallback.retry.max_delay_ms,
+            )
+
+        return llm_model_service_pb2.FallbackConfig(
+            enabled=fallback.enabled,
+            models=[
+                llm_model_service_pb2.FallbackModel(provider=model.provider, model=model.model)
+                for model in fallback.models
+            ],
+            retry=retry,
         )
 
     @staticmethod
