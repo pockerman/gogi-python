@@ -21,8 +21,8 @@ platform = Gogi(gateway_url="localhost:50051", logger=logger)
 ```
 
 The `Gogi` object gives access to all the clients: `platform.indexes`, `platform.documents`,
-`platform.llm_clients`, `platform.prompts`, `platform.llm_session`, `platform.tools`, `platform.guardrails`
-and `platform.workflows`.
+`platform.llm_clients`, `platform.prompts`, `platform.llm_session`, `platform.tools`, `platform.guardrails`,
+`platform.workflows` and `platform.observability`.
 
 ## Intro examples
 
@@ -39,6 +39,7 @@ Short examples, one per client, in [`intro/`](intro).
 | [Example 7](intro/example_7/example_7.md)      | `GuardrailsClient` (`platform.guardrails`)  | Guard a travel agency's booking assistant: input, output, tool argument, behavioural and approval policies; shadow mode; audit |
 | [Example 8](intro/example_8/example_8.md)      | `LLMModelsClient`, `LLMToolsClient`         | A model calls the platform's tools: the agent loop, with confirmation of tool calls and streamed tool calls |
 | [Example 9](intro/example_9/example_9.md)      | `LLMModelsClient` (`platform.llm_clients`)  | Resilient calls: the platform retries failed calls and falls back to other models; the circuit breaker |
+| [Example 10](intro/example_10/example_10.md)   | `ObservabilityClient` (`platform.observability`) | Trace a request across the application and the platform; logs, metrics and scores; traces by quality, cost, budgets and service health |
 
 Run an example from the repository root, e.g.
 
