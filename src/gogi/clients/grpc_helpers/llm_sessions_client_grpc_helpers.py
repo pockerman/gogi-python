@@ -1,5 +1,8 @@
+import json
 from datetime import UTC, datetime
+from typing import Any
 
+from gogi.models.llm.llm_memory_entry import LLMMemoryEntry
 from gogi.models.llm.llm_message import LLMMessage
 from gogi.models.llm.llm_session import LLMSession
 from gogi.models.llm.llm_tool_definition import LLMToolCall, ToolCallFunction
@@ -57,7 +60,17 @@ from gogi.models.llm.responses.llm_session.save_llm_session_memory_response impo
 from gogi.v1 import llm_message_pb2, llm_session_service_pb2, llm_tool_pb2
 
 
+def _from_millis(millis: int) -> datetime:
+    return datetime.fromtimestamp(millis / 1000, tz=UTC)
+
+
+def _decode(value: str) -> Any:
+    return json.loads(value) if value else None
+
+
 class LLMSessionsClientGRPCHelper:
+    # --- Sessions ---
+
     @staticmethod
     def build_grpc_create_session_request(
         request: CreateLLMSessionRequest,
@@ -65,21 +78,61 @@ class LLMSessionsClientGRPCHelper:
         return llm_session_service_pb2.GetOrCreateSessionRequest(user_id=request.user_id, session_id=request.session_id)
 
     @staticmethod
-    def serialize_create_session_grpc_response(
-        grpc_response: llm_session_service_pb2.GetOrCreateSessionRequest,
-    ) -> LLMSession:
+    def grpc_session_to_session(session: llm_session_service_pb2.Session, created: bool = False) -> LLMSession:
         return LLMSession(
-            session_id=grpc_response.session.session_id,
-            user_id=grpc_response.session.user_id,
-            created_at=grpc_response.session.created_at,
-            updated_at=grpc_response.session.updated_at,
+            session_id=session.session_id,
+            user_id=session.user_id,
+            created_at=_from_millis(session.created_at),
+            updated_at=_from_millis(session.updated_at),
+            message_count=session.message_count,
+            created=created,
         )
 
     @staticmethod
+    def serialize_create_session_grpc_response(
+        grpc_response: llm_session_service_pb2.GetOrCreateSessionResponse,
+    ) -> LLMSession:
+        return LLMSessionsClientGRPCHelper.grpc_session_to_session(grpc_response.session, grpc_response.created)
+
+    @staticmethod
+    def build_grpc_list_sessions_request(
+        request: ListLLMSessionsRequest,
+    ) -> llm_session_service_pb2.ListSessionsRequest:
+        return llm_session_service_pb2.ListSessionsRequest(
+            user_id=request.user_id, limit=request.limit, offset=request.offset
+        )
+
+    @staticmethod
+    def serialize_list_sessions_grpc_response(
+        grpc_response: llm_session_service_pb2.ListSessionsResponse,
+    ) -> ListLLMSessionsResponse:
+        return ListLLMSessionsResponse(
+            sessions=[LLMSessionsClientGRPCHelper.grpc_session_to_session(s) for s in grpc_response.sessions],
+            total_count=grpc_response.total_count,
+        )
+
+    @staticmethod
+    def build_grpc_delete_session_request(
+        request: DeleteLLMSessionRequest,
+    ) -> llm_session_service_pb2.DeleteSessionRequest:
+        return llm_session_service_pb2.DeleteSessionRequest(
+            session_id=request.session_id, delete_memories=request.delete_memories
+        )
+
+    @staticmethod
+    def serialize_delete_session_grpc_response(
+        grpc_response: llm_session_service_pb2.DeleteSessionResponse,
+    ) -> DeleteLLMSessionResponse:
+        return DeleteLLMSessionResponse(success=grpc_response.success)
+
+    # --- Messages ---
+
+    @staticmethod
     def llm_message_to_grpc(msg: LLMMessage) -> llm_message_pb2.LLMMessage:
+        # unset optional fields stay unset: an assistant message that only calls tools has no content
         return llm_message_pb2.LLMMessage(
             role=msg.role,
-            content=msg.content or "",
+            content=msg.content,
             tool_calls=[
                 llm_tool_pb2.ToolCall(
                     id=tc.idx,
@@ -91,8 +144,26 @@ class LLMSessionsClientGRPCHelper:
                 )
                 for tc in msg.tool_calls
             ],
-            tool_call_id=msg.tool_call_id or "",
-            name=msg.name or "",
+            tool_call_id=msg.tool_call_id,
+            name=msg.name,
+            timestamp=msg.timestamp,
+        )
+
+    @staticmethod
+    def grpc_message_to_llm_message(msg: llm_message_pb2.LLMMessage) -> LLMMessage:
+        return LLMMessage(
+            role=msg.role,
+            content=msg.content if msg.HasField("content") else None,
+            tool_calls=[
+                LLMToolCall(
+                    idx=tc.id,
+                    tool_type=tc.type,
+                    function=ToolCallFunction(name=tc.function.name, arguments=tc.function.arguments),
+                )
+                for tc in msg.tool_calls
+            ],
+            tool_call_id=msg.tool_call_id if msg.HasField("tool_call_id") else None,
+            name=msg.name if msg.HasField("name") else None,
             timestamp=msg.timestamp,
         )
 
@@ -109,122 +180,63 @@ class LLMSessionsClientGRPCHelper:
     def serialize_add_messages_to_session_grpc_response(
         grpc_response: llm_session_service_pb2.AddMessagesResponse,
     ) -> AddMMessagesToLLMSessionResponse:
-        print(grpc_response)
         return AddMMessagesToLLMSessionResponse(
-            success=grpc_response.success, message_count=grpc_response.message_count
+            success=grpc_response.success,
+            message_count=grpc_response.message_count,
+            total_count=grpc_response.total_count,
         )
-
-    @staticmethod
-    def build_grpc_delete_session_request(
-        request: DeleteLLMSessionRequest,
-    ) -> llm_session_service_pb2.DeleteSessionRequest:
-        return llm_session_service_pb2.DeleteSessionRequest(session_id=request.session_id)
-
-    @staticmethod
-    def serialize_delete_session_grpc_response(
-        grpc_response: llm_session_service_pb2.DeleteSessionResponse,
-    ) -> DeleteLLMSessionResponse:
-        return DeleteLLMSessionResponse(success=grpc_response.success)
-
-    @staticmethod
-    def build_grpc_delete_memory_request(
-        request: DeleteLLMSessionMemoryRequest,
-    ) -> llm_session_service_pb2.DeleteMemoryRequest:
-        return llm_session_service_pb2.DeleteMemoryRequest(
-            session_id=request.session_id, user_id=request.user_id, key=request.key
-        )
-
-    @staticmethod
-    def serialize_delete_memory_grpc_response(
-        grpc_response: llm_session_service_pb2.DeleteSessionResponse,
-    ) -> DeleteLLMSessionMemoryResponse:
-        return DeleteLLMSessionMemoryResponse(success=grpc_response.success)
-
-    @staticmethod
-    def build_grpc_clear_user_memory_request(
-        request: ClearUserLLMSessionMemoryRequest,
-    ) -> llm_session_service_pb2.ClearUserMemoryRequest:
-        return llm_session_service_pb2.ClearUserMemoryRequest(user_id=request.user_id)
-
-    @staticmethod
-    def serialize_clear_user_memory_grpc_response(
-        grpc_response: llm_session_service_pb2.ClearUserMemoryResponse,
-    ) -> ClearUserLLMSessionMemoryResponse:
-        return ClearUserLLMSessionMemoryResponse(count=grpc_response.count)
 
     @staticmethod
     def build_grpc_get_messages_request(
         request: GetMessagesFromLLMSessionRequest,
     ) -> llm_session_service_pb2.GetMessagesRequest:
         return llm_session_service_pb2.GetMessagesRequest(
-            session_id=request.session_id, limit=request.limit, offset=request.offset, strategy=request.strategy
+            session_id=request.session_id,
+            limit=request.limit,
+            offset=request.offset,
+            strategy=request.strategy,
+            token_budget=request.token_budget,
+            summary_focus=request.summary_focus,
         )
 
     @staticmethod
     def serialize_get_messages_grpc_response(
         grpc_response: llm_session_service_pb2.GetMessagesResponse,
     ) -> GetMessagesFromLLMSessionResponse:
-        messages = []
-        for msg in grpc_response.messages:
-            tool_calls = [
-                LLMToolCall(
-                    idx=tc.id,
-                    tool_type=tc.type,
-                    function=ToolCallFunction(
-                        name=tc.function.name,
-                        arguments=tc.function.arguments,
-                    ),
-                )
-                for tc in msg.tool_calls
-            ]
-
-            messages.append(
-                LLMMessage(
-                    role=msg.role,
-                    content=msg.content if msg.HasField("content") else None,
-                    tool_calls=tool_calls,
-                    tool_call_id=msg.tool_call_id if msg.HasField("tool_call_id") else None,
-                    name=msg.name if msg.HasField("name") else None,
-                    timestamp=msg.timestamp,
-                )
-            )
-
         return GetMessagesFromLLMSessionResponse(
-            messages=messages,
+            messages=[LLMSessionsClientGRPCHelper.grpc_message_to_llm_message(m) for m in grpc_response.messages],
             total_count=grpc_response.total_count,
+            strategy=grpc_response.strategy or "none",
+            omitted_count=grpc_response.omitted_count,
+            summarized_count=grpc_response.summarized_count,
+            summary=grpc_response.summary,
+            estimated_tokens=grpc_response.estimated_tokens,
+            notes=list(grpc_response.notes),
         )
 
-    @staticmethod
-    def build_grpc_list_sessions_request(
-        request: ListLLMSessionsRequest,
-    ) -> llm_session_service_pb2.ListSessionsRequest:
-        return llm_session_service_pb2.ListSessionsRequest(user_id=request.user_id)
+    # --- Memories ---
 
     @staticmethod
-    def serialize_list_sessions_grpc_response(
-        grpc_response: llm_session_service_pb2.ListSessionsResponse,
-    ) -> ListLLMSessionsResponse:
-        sessions = [
-            LLMSession(
-                session_id=session.session_id,
-                user_id=session.user_id,
-                created_at=datetime.fromtimestamp(session.created_at, tz=UTC),
-                updated_at=datetime.fromtimestamp(session.updated_at, tz=UTC),
-            )
-            for session in grpc_response.sessions
-        ]
-
-        return ListLLMSessionsResponse(sessions=sessions)
+    def grpc_memory_to_entry(entry: llm_session_service_pb2.MemoryEntry) -> LLMMemoryEntry:
+        return LLMMemoryEntry(
+            key=entry.key,
+            value=_decode(entry.value),
+            session_id=entry.session_id or None,
+            created_at=entry.created_at,
+            updated_at=entry.updated_at,
+        )
 
     @staticmethod
     def build_grpc_save_memory_request(
         request: SaveLLMSessionMemoryRequest,
     ) -> llm_session_service_pb2.SaveMemoryRequest:
+        # values travel as JSON, so they keep their type
         return llm_session_service_pb2.SaveMemoryRequest(
             user_id=request.user_id,
             key=request.key,
-            value=request.value,
+            value=json.dumps(request.value),
             session_id=request.session_id,
+            expected_updated_at=request.expected_updated_at,
         )
 
     @staticmethod
@@ -233,6 +245,9 @@ class LLMSessionsClientGRPCHelper:
     ) -> SaveLLMSessionMemoryResponse:
         return SaveLLMSessionMemoryResponse(
             success=grpc_response.success,
+            entry=LLMSessionsClientGRPCHelper.grpc_memory_to_entry(grpc_response.entry)
+            if grpc_response.HasField("entry")
+            else None,
         )
 
     @staticmethod
@@ -248,5 +263,32 @@ class LLMSessionsClientGRPCHelper:
         grpc_response: llm_session_service_pb2.GetMemoryResponse,
     ) -> GetLLMSessionMemoryResponse:
         return GetLLMSessionMemoryResponse(
-            memories=dict(grpc_response.memories),
+            memories={key: _decode(value) for key, value in grpc_response.memories.items()},
+            entries=[LLMSessionsClientGRPCHelper.grpc_memory_to_entry(e) for e in grpc_response.entries],
         )
+
+    @staticmethod
+    def build_grpc_delete_memory_request(
+        request: DeleteLLMSessionMemoryRequest,
+    ) -> llm_session_service_pb2.DeleteMemoryRequest:
+        return llm_session_service_pb2.DeleteMemoryRequest(
+            session_id=request.session_id, user_id=request.user_id, key=request.key
+        )
+
+    @staticmethod
+    def serialize_delete_memory_grpc_response(
+        grpc_response: llm_session_service_pb2.DeleteMemoryResponse,
+    ) -> DeleteLLMSessionMemoryResponse:
+        return DeleteLLMSessionMemoryResponse(success=grpc_response.success, count=grpc_response.count)
+
+    @staticmethod
+    def build_grpc_clear_user_memory_request(
+        request: ClearUserLLMSessionMemoryRequest,
+    ) -> llm_session_service_pb2.ClearUserMemoryRequest:
+        return llm_session_service_pb2.ClearUserMemoryRequest(user_id=request.user_id)
+
+    @staticmethod
+    def serialize_clear_user_memory_grpc_response(
+        grpc_response: llm_session_service_pb2.ClearUserMemoryResponse,
+    ) -> ClearUserLLMSessionMemoryResponse:
+        return ClearUserLLMSessionMemoryResponse(count=grpc_response.count)

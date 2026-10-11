@@ -1,10 +1,12 @@
 from .llm.llm_capabilities import LLMCapabilities
 from .llm.llm_fallback_config import LLMFallbackConfig, LLMFallbackModel, LLMRetryConfig
 from .llm.llm_function_definition import LLMFunctionDefinition
+from .llm.llm_memory_entry import LLMMemoryEntry
 from .llm.llm_message import LLMMessage
 from .llm.llm_model_info import LLMModelInfo
 from .llm.llm_response_format import LLMRespnseFormat
 from .llm.llm_run_request_config import LLMRunRequestConfig
+from .llm.llm_session import LLMSession
 from .llm.llm_token_usage import LLMTokenUsage
 from .llm.llm_tool_definition import LLMToolCall, LLMToolDefinition, ToolCallFunction
 from .llm.registered_llm import RegisteredLLM
