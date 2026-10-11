@@ -5,3 +5,5 @@ from gogi.models.llm.llm_session import LLMSession
 
 class ListLLMSessionsResponse(BaseModel):
     sessions: list[LLMSession]
+    # the number of sessions of the user
+    total_count: int = 0
