@@ -156,9 +156,7 @@ def register_failing_model(platform: Gogi) -> None:
 
 def request(fallback: LLMFallbackConfig | None = None) -> LLMRunRequest:
     return LLMRunRequest(
-        config=LLMRunRequestConfig(
-            provider=FAILING_PROVIDER, model=FAILING_MODEL, max_tokens=200, fallback=fallback
-        ),
+        config=LLMRunRequestConfig(provider=FAILING_PROVIDER, model=FAILING_MODEL, max_tokens=200, fallback=fallback),
         messages=[LLMMessage(role="user", content=QUESTION)],
     )
 
