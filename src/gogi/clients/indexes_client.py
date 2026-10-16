@@ -1,6 +1,12 @@
 from gogi.clients.base_client import BaseClient
-from gogi.models.gogi_index import GogiIndex
+from gogi.models.gogi_index import GogiIndex, IndexRole
 from gogi.v1.data import index_service_pb2, index_service_pb2_grpc
+
+_TO_PROTO_ROLE = {
+    IndexRole.OWNER: index_service_pb2.INDEX_MEMBER_ROLE_OWNER,
+    IndexRole.READER: index_service_pb2.INDEX_MEMBER_ROLE_READER,
+}
+_FROM_PROTO_ROLE = {proto: role for role, proto in _TO_PROTO_ROLE.items()}
 
 
 class IndexesClient(BaseClient):
@@ -12,6 +18,7 @@ class IndexesClient(BaseClient):
             owner=resp.owner,
             created_at=resp.created_at,
             last_updated_at=resp.last_updated_at,
+            members={member.user: _FROM_PROTO_ROLE[member.role] for member in resp.members},
         )
 
     def __init__(self, platform, logger=None):
@@ -33,6 +40,39 @@ class IndexesClient(BaseClient):
         request = index_service_pb2.ListIndexesRequest(owner_name=owner_name)
         resp = self._stub.ListIndexes(request, metadata=self.route_metadata)
         return [self.proto_to_index(index) for index in resp.indexes]
+
+    def list_member_indexes(self, user: str) -> list[GogiIndex]:
+        """The indexes the user has any role on: the ones they created and the ones shared with them."""
+        if self.logger:
+            self.logger.debug(f"Listing indexes of member: {user}")
+
+        request = index_service_pb2.ListIndexesRequest(member=user)
+        resp = self._stub.ListIndexes(request, metadata=self.route_metadata)
+        return [self.proto_to_index(index) for index in resp.indexes]
+
+    def set_member(self, index_name: str, user: str, role: IndexRole) -> GogiIndex:
+        """Gives the user the role on the index, or changes the role they have.
+
+        Raises ``grpc.RpcError`` with ``FAILED_PRECONDITION`` when demoting the index's last owner.
+        """
+        if self.logger:
+            self.logger.debug(f"Giving {user} the role {role} on index {index_name}")
+
+        request = index_service_pb2.SetIndexMemberRequest(index_name=index_name, user=user, role=_TO_PROTO_ROLE[role])
+        resp = self._stub.SetIndexMember(request, metadata=self.route_metadata)
+        return self.proto_to_index(resp)
+
+    def remove_member(self, index_name: str, user: str) -> GogiIndex:
+        """Takes the user off the index.
+
+        Raises ``grpc.RpcError`` with ``FAILED_PRECONDITION`` when removing the index's last owner.
+        """
+        if self.logger:
+            self.logger.debug(f"Removing {user} from index {index_name}")
+
+        request = index_service_pb2.RemoveIndexMemberRequest(index_name=index_name, user=user)
+        resp = self._stub.RemoveIndexMember(request, metadata=self.route_metadata)
+        return self.proto_to_index(resp)
 
     def get_index_by_name(self, index_name: str) -> GogiIndex:
         if self.logger:
