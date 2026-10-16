@@ -8,7 +8,8 @@ small set of codes that indicate transient infrastructure trouble.
 Retryable codes:
 - UNAVAILABLE        — server unreachable / not yet ready
 - DEADLINE_EXCEEDED  — call timed out before completing
-- RESOURCE_EXHAUSTED — server-side rate limit or load shedding
+- RESOURCE_EXHAUSTED — server-side rate limit or load shedding, but not a message
+                       larger than gRPC's limit, which fails the same way every time
 
 Anything else (INVALID_ARGUMENT, NOT_FOUND, PERMISSION_DENIED, …) propagates
 immediately. The retry layer is for transient infra blips, not for hiding
@@ -62,7 +63,7 @@ class RetryInterceptor(grpc.UnaryUnaryClientInterceptor):
 
             if code is None or code == grpc.StatusCode.OK:
                 return response
-            if code not in RETRYABLE_CODES:
+            if code not in RETRYABLE_CODES or _is_message_too_large(code, response):
                 return response
 
             last_response = response
@@ -70,3 +71,11 @@ class RetryInterceptor(grpc.UnaryUnaryClientInterceptor):
                 self._sleep(self.base_backoff_seconds * (2**attempt))
 
         return last_response
+
+
+def _is_message_too_large(code, response) -> bool:
+    """gRPC reports a message over its size limit as RESOURCE_EXHAUSTED, e.g.
+    "Received message larger than max (5242880 vs. 4194304)"."""
+    if code != grpc.StatusCode.RESOURCE_EXHAUSTED or not hasattr(response, "details"):
+        return False
+    return "larger than max" in (response.details() or "")

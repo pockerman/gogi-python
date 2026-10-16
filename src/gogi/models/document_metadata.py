@@ -19,3 +19,5 @@ class DocumentMetadata(BaseModel):
     # the status of the document's ingestion job, e.g. PENDING, COMPLETED or FAILED
     status: str | None = None
     job_id: str | None = None
+    # the size of the uploaded file; 0 for documents ingested before uploads were kept
+    size_bytes: int = 0

@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from gogi.clients.documents_client import DocumentsClient
+from gogi.models.ingest_document import IngestDocumentRequest
 from gogi.models.search_documents import SearchDocumentsRequest
 from gogi.v1.data import document_service_pb2
 
@@ -147,3 +148,54 @@ def test_delete_document(client):
     assert client.delete_document("maria--aeronautics", "doc-1") is True
     request = client._stub.DeleteDocument.call_args.args[0]
     assert (request.index_name, request.document_id) == ("maria--aeronautics", "doc-1")
+
+
+# ---------------------------------------------------------------------------
+# ingest
+# ---------------------------------------------------------------------------
+
+
+def _ingest(client, content: bytes):
+    sent = []
+
+    def upload(parts, metadata):
+        sent.extend(parts)
+        return document_service_pb2.IngestDocumentJobResponse(job_id="job-1", index_name="idx", status="PENDING")
+
+    client._stub.UploadDocument.side_effect = upload
+    job = client.ingest_document(
+        IngestDocumentRequest(
+            index_name="maria--aeronautics",
+            document_id="fe-basics",
+            filename="fe-basics.pdf",
+            content=content,
+            content_type="application/pdf",
+            metadata={"subject": "numerical-methods"},
+            chunk_strategy="fixed",
+            embeddings_model="clip",
+            embeddings_client="sentence-transformer",
+        )
+    )
+    return job, sent
+
+
+def test_ingest_document_streams_the_details_then_the_content_in_parts(client, monkeypatch):
+    monkeypatch.setattr("gogi.clients.documents_client.UPLOAD_CHUNK_BYTES", 4)
+
+    job, sent = _ingest(client, b"0123456789")
+
+    assert job.job_id == "job-1"
+    info = sent[0].info
+    assert (info.index_name, info.document_id, info.filename) == ("maria--aeronautics", "fe-basics", "fe-basics.pdf")
+    assert dict(info.metadata) == {"subject": "numerical-methods"}
+    assert info.content == b""
+    assert [part.chunk for part in sent[1:]] == [b"0123", b"4567", b"89"]
+
+
+def test_ingest_document_streams_a_large_document_in_parts_under_the_message_limit(client):
+    content = b"x" * (5 * 1024 * 1024 + 1)
+
+    _, sent = _ingest(client, content)
+
+    assert all(len(part.chunk) <= 1024 * 1024 for part in sent[1:])
+    assert b"".join(part.chunk for part in sent[1:]) == content

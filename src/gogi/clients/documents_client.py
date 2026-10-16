@@ -6,6 +6,9 @@ from gogi.models.ingest_document import IngestDocumentJob, IngestDocumentRequest
 from gogi.models.search_documents import DocumentChunk, SearchDocumentsRequest, SearchDocumentsResponse
 from gogi.v1.data import document_service_pb2, document_service_pb2_grpc
 
+# each part of an upload stays well under gRPC's 4 MB message limit
+UPLOAD_CHUNK_BYTES = 1024 * 1024
+
 
 class DocumentsClient(BaseClient):
     @staticmethod
@@ -21,6 +24,7 @@ class DocumentsClient(BaseClient):
             content_type=resp.content_type or None,
             status=resp.status or None,
             job_id=resp.job_id or None,
+            size_bytes=resp.size_bytes,
             **({"ingested_at": datetime.fromisoformat(resp.created_at)} if resp.created_at else {}),
         )
 
@@ -84,12 +88,11 @@ class DocumentsClient(BaseClient):
         Ingest a document into the Gogi platform.
         This will create a new document associated with the specified index,
         and will kick off an asynchronous job to process the document (e.g., chunking, embedding, etc.).
+        The content is streamed to the platform in parts of `UPLOAD_CHUNK_BYTES`, so documents larger
+        than a single gRPC message (4 MB) can be ingested, up to the platform's upload limit.
         Args:
-            index_name (str): The name of the index to ingest the document into.
-            document_id (str): A unique identifier for the document being ingested.
-            filename (str): The original filename of the document being ingested.
-            content (bytes): The raw content of the document being ingested.
-            metadata (Optional[dict]): Optional custom metadata to associate with the document.
+            request (IngestDocumentRequest): the index to ingest the document into, its filename, content,
+                metadata, and how to chunk and embed it. The platform chooses the document_id if it's empty.
         Returns:
             IngestDocumentJob: An object representing the ingest job that was created to process the document.
             This includes information about the job status, progress, and any errors that may have occurred.
@@ -98,11 +101,10 @@ class DocumentsClient(BaseClient):
         if self.logger:
             self.logger.debug(f"Ingesting document: {request.document_id} from index: {request.index_name}")
 
-        proto_request = document_service_pb2.IngestDocumentRequest(
+        info = document_service_pb2.IngestDocumentRequest(
             index_name=request.index_name,
             document_id=request.document_id,
             filename=request.filename,
-            content=request.content,
             content_type=request.content_type,
             metadata=request.metadata,
             embeddings_client=request.embeddings_client,
@@ -110,8 +112,16 @@ class DocumentsClient(BaseClient):
             embeddings_model=request.embeddings_model,
             chunk_strategy=request.chunk_strategy,
         )
-        resp = self._stub.IngestDocument(proto_request, metadata=self.route_metadata)
+        resp = self._stub.UploadDocument(self._upload_parts(info, request.content), metadata=self.route_metadata)
         return self.proto_to_ingest_job(resp)
+
+    @staticmethod
+    def _upload_parts(info, content: bytes):
+        """the document's details, then its content in parts"""
+        yield document_service_pb2.UploadDocumentRequest(info=info)
+        view = memoryview(content)
+        for start in range(0, len(view), UPLOAD_CHUNK_BYTES):
+            yield document_service_pb2.UploadDocumentRequest(chunk=bytes(view[start : start + UPLOAD_CHUNK_BYTES]))
 
     def get_document_ingest_job(self, job_id: str) -> IngestDocumentJob:
         """
