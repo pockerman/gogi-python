@@ -4,6 +4,7 @@ import pytest
 
 from gogi.clients.documents_client import DocumentsClient
 from gogi.models.search_documents import SearchDocumentsRequest
+from gogi.v1.data import document_service_pb2
 
 
 @pytest.fixture
@@ -96,3 +97,53 @@ def test_search_documents_serializes_chunks(client):
 def test_search_documents_rejects_non_positive_top_k():
     with pytest.raises(ValueError):
         SearchDocumentsRequest(index_name="idx", query="q", top_k=0, embeddings_model="m", embeddings_client="openai")
+
+
+# ---------------------------------------------------------------------------
+# the document registry
+# ---------------------------------------------------------------------------
+
+
+def _grpc_document(**overrides):
+    defaults = {
+        "document_id": "doc-1",
+        "index_name": "maria--aeronautics",
+        "filename": "fe-basics.txt",
+        "chunk_count": 4,
+        "metadata": {"subject": "numerical-methods", "topic": "finite-elements"},
+        "content_type": "text/plain",
+        "status": "COMPLETED",
+        "job_id": "job-1",
+        "created_at": "2026-10-16T10:00:00Z",
+    }
+    defaults.update(overrides)
+    return document_service_pb2.DocumentMetadata(**defaults)
+
+
+def test_list_documents_with_a_metadata_filter(client):
+    client._stub.ListDocuments.return_value = document_service_pb2.ListDocumentsResponse(documents=[_grpc_document()])
+
+    documents = client.list_documents("maria--aeronautics", metadata_filter={"subject": "numerical-methods"})
+
+    request = client._stub.ListDocuments.call_args.args[0]
+    assert request.index_name == "maria--aeronautics"
+    assert dict(request.metadata_filter) == {"subject": "numerical-methods"}
+    [document] = documents
+    assert document.custom_metadata == {"subject": "numerical-methods", "topic": "finite-elements"}
+    assert (document.status, document.job_id, document.content_type) == ("COMPLETED", "job-1", "text/plain")
+    assert document.ingested_at.isoformat() == "2026-10-16T10:00:00+00:00"
+
+
+def test_list_documents_without_a_filter(client):
+    client._stub.ListDocuments.return_value = document_service_pb2.ListDocumentsResponse()
+
+    assert client.list_documents("maria--aeronautics") == []
+    assert dict(client._stub.ListDocuments.call_args.args[0].metadata_filter) == {}
+
+
+def test_delete_document(client):
+    client._stub.DeleteDocument.return_value = document_service_pb2.DeleteDocumentResponse(chunks_deleted=4)
+
+    assert client.delete_document("maria--aeronautics", "doc-1") is True
+    request = client._stub.DeleteDocument.call_args.args[0]
+    assert (request.index_name, request.document_id) == ("maria--aeronautics", "doc-1")

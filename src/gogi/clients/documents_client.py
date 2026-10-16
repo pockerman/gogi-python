@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from gogi.clients.base_client import BaseClient
 from gogi.models.document_metadata import DocumentMetadata
 from gogi.models.ingest_document import IngestDocumentJob, IngestDocumentRequest
@@ -15,7 +17,11 @@ class DocumentsClient(BaseClient):
             chunk_count=resp.chunk_count,
             page_count=resp.page_count if resp.page_count else None,
             word_count=resp.word_count if resp.word_count else None,
-            custom_metadata=None,
+            custom_metadata=dict(resp.metadata),
+            content_type=resp.content_type or None,
+            status=resp.status or None,
+            job_id=resp.job_id or None,
+            **({"ingested_at": datetime.fromisoformat(resp.created_at)} if resp.created_at else {}),
         )
 
     @staticmethod
@@ -45,10 +51,12 @@ class DocumentsClient(BaseClient):
         super().__init__(platform=platform, service_name="documents", logger=logger)
         self._stub = document_service_pb2_grpc.DocumentServerStub(self._channel)
 
-    def list_documents(self, index_name: str) -> list[DocumentMetadata]:
+    def list_documents(self, index_name: str, metadata_filter: dict[str, str] | None = None) -> list[DocumentMetadata]:
+        """The documents of the index, optionally only those whose metadata has every key and value of
+        ``metadata_filter``."""
         if self.logger:
             self.logger.debug(f"Listing documents for index: {index_name}")
-        request = document_service_pb2.ListDocumentsRequest(index_name=index_name)
+        request = document_service_pb2.ListDocumentsRequest(index_name=index_name, metadata_filter=metadata_filter)
         resp = self._stub.ListDocuments(request, metadata=self.route_metadata)
         return [self.proto_to_doc_meta(d) for d in resp.documents]
 
@@ -61,11 +69,15 @@ class DocumentsClient(BaseClient):
         return self.proto_to_doc_meta(resp.document)
 
     def delete_document(self, index_name: str, document_id: str) -> bool:
+        """Deletes the document and its chunks. Raises ``grpc.RpcError`` with ``NOT_FOUND`` if there's no such
+        document."""
         if self.logger:
             self.logger.debug(f"Deleting document: {document_id} from index: {index_name}")
         request = document_service_pb2.DeleteDocumentRequest(index_name=index_name, document_id=document_id)
         resp = self._stub.DeleteDocument(request, metadata=self.route_metadata)
-        return resp.response
+        if self.logger:
+            self.logger.debug(f"Deleted {resp.chunks_deleted} chunks of document {document_id}")
+        return True
 
     def ingest_document(self, request: IngestDocumentRequest) -> IngestDocumentJob:
         """

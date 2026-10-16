@@ -16,7 +16,8 @@ class IngestDocumentJob(BaseModel):
 class IngestDocumentRequest(BaseModel):
     index_name: str
     filename: str
-    document_id: str
+    # chosen by the platform if empty
+    document_id: str = ""
     chunk_strategy: str
     embeddings_model: str
     embeddings_client: str
