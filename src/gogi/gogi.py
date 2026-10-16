@@ -2,6 +2,7 @@ import os
 
 from gogi.clients.documents_client import DocumentsClient
 from gogi.clients.guardrails_client import GuardrailsClient
+from gogi.clients.health_client import HealthClient
 from gogi.clients.indexes_client import IndexesClient
 from gogi.clients.llm_models_client import LLMModelsClient
 from gogi.clients.llm_sessions_client import LLMSessionsClient
@@ -39,6 +40,7 @@ class Gogi:
         self._llm_models: LLMModelsClient | None = None
         self._prompts: PromptsClient | None = None
         self._guardrails: GuardrailsClient | None = None
+        self._health: HealthClient | None = None
         self._observability: ObservabilityClient | None = None
         self._tools: LLMToolsClient | None = None
         self._evaluation = None
@@ -85,6 +87,12 @@ class Gogi:
         if not self._observability:
             self._observability = ObservabilityClient(platform=self, logger=self.logger)
         return self._observability
+
+    @property
+    def health(self) -> HealthClient:
+        if not self._health:
+            self._health = HealthClient(platform=self, logger=self.logger)
+        return self._health
 
     @property
     def guardrails(self) -> GuardrailsClient:

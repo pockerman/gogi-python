@@ -22,7 +22,7 @@ platform = Gogi(gateway_url="localhost:50051", logger=logger)
 
 The `Gogi` object gives access to all the clients: `platform.indexes`, `platform.documents`,
 `platform.llm_clients`, `platform.prompts`, `platform.llm_session`, `platform.tools`, `platform.guardrails`,
-`platform.workflows` and `platform.observability`.
+`platform.workflows`, `platform.observability` and `platform.health`.
 
 ## Intro examples
 
