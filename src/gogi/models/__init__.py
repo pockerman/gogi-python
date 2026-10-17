@@ -4,7 +4,7 @@ from .llm.llm_function_definition import LLMFunctionDefinition
 from .llm.llm_memory_entry import LLMMemoryEntry
 from .llm.llm_message import LLMMessage
 from .llm.llm_model_info import LLMModelInfo
-from .llm.llm_response_format import LLMRespnseFormat
+from .llm.llm_response_format import LLMRespnseFormat, LLMResponseFormat
 from .llm.llm_run_request_config import LLMRunRequestConfig
 from .llm.llm_session import LLMSession
 from .llm.llm_token_usage import LLMTokenUsage
