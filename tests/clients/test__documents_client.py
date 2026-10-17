@@ -155,7 +155,7 @@ def test_delete_document(client):
 # ---------------------------------------------------------------------------
 
 
-def _ingest(client, content: bytes):
+def _ingest(client, content: bytes, store_only: bool = False):
     sent = []
 
     def upload(parts, metadata):
@@ -174,6 +174,7 @@ def _ingest(client, content: bytes):
             chunk_strategy="fixed",
             embeddings_model="clip",
             embeddings_client="sentence-transformer",
+            store_only=store_only,
         )
     )
     return job, sent
@@ -259,3 +260,18 @@ def test_download_document_joins_its_parts(client):
 
     assert document.filename == "fem-notes.md"
     assert content == b"# 1 Introduction\n"
+
+
+def test_download_part_of_a_document(client):
+    client._stub.DownloadDocument.return_value = iter([])
+
+    client.download_document("maria--aeronautics", "lecture-3", offset=100, length=50)
+
+    request = client._stub.DownloadDocument.call_args.args[0]
+    assert (request.offset, request.length) == (100, 50)
+
+
+def test_ingest_a_document_without_ingesting_it(client):
+    _, sent = _ingest(client, b"video bytes", store_only=True)
+
+    assert sent[0].info.store_only is True

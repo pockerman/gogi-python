@@ -122,6 +122,7 @@ class DocumentsClient(BaseClient):
             batch_size=request.batch_size,
             embeddings_model=request.embeddings_model,
             chunk_strategy=request.chunk_strategy,
+            store_only=request.store_only,
         )
         resp = self._stub.UploadDocument(self._upload_parts(info, request.content), metadata=self.route_metadata)
         return self.proto_to_ingest_job(resp)
@@ -156,9 +157,14 @@ class DocumentsClient(BaseClient):
             for part in resp.sections
         ]
 
-    def download_document(self, index_name: str, document_id: str) -> tuple[DocumentMetadata, bytes]:
-        """The document and its uploaded file, which the platform streams in parts."""
-        request = document_service_pb2.DownloadDocumentRequest(index_name=index_name, document_id=document_id)
+    def download_document(
+        self, index_name: str, document_id: str, offset: int = 0, length: int = 0
+    ) -> tuple[DocumentMetadata, bytes]:
+        """The document and its uploaded file, which the platform streams in parts: the whole file, or length bytes
+        of it from offset (to its end if length is 0), e.g. for a video player seeking."""
+        request = document_service_pb2.DownloadDocumentRequest(
+            index_name=index_name, document_id=document_id, offset=offset, length=length
+        )
         document, parts = None, []
         for message in self._stub.DownloadDocument(request, metadata=self.route_metadata):
             if message.HasField("document"):

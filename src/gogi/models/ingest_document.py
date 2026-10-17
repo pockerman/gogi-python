@@ -25,3 +25,5 @@ class IngestDocumentRequest(BaseModel):
     content: bytes
     content_type: str
     metadata: dict[str, str] | None = None
+    # keep and register the file without ingesting it, e.g. a video: it gets no chunks or sections
+    store_only: bool = False
