@@ -123,6 +123,7 @@ class DocumentsClient(BaseClient):
             embeddings_model=request.embeddings_model,
             chunk_strategy=request.chunk_strategy,
             store_only=request.store_only,
+            replace=request.replace,
         )
         resp = self._stub.UploadDocument(self._upload_parts(info, request.content), metadata=self.route_metadata)
         return self.proto_to_ingest_job(resp)

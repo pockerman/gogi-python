@@ -155,7 +155,7 @@ def test_delete_document(client):
 # ---------------------------------------------------------------------------
 
 
-def _ingest(client, content: bytes, store_only: bool = False):
+def _ingest(client, content: bytes, store_only: bool = False, replace: bool = False):
     sent = []
 
     def upload(parts, metadata):
@@ -175,6 +175,7 @@ def _ingest(client, content: bytes, store_only: bool = False):
             embeddings_model="clip",
             embeddings_client="sentence-transformer",
             store_only=store_only,
+            replace=replace,
         )
     )
     return job, sent
@@ -275,3 +276,10 @@ def test_ingest_a_document_without_ingesting_it(client):
     _, sent = _ingest(client, b"video bytes", store_only=True)
 
     assert sent[0].info.store_only is True
+
+
+def test_replace_a_documents_content(client):
+    _, sent = _ingest(client, b"new text", replace=True)
+
+    assert sent[0].info.replace is True
+    assert sent[0].info.document_id == "fe-basics"

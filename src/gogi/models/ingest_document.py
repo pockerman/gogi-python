@@ -27,3 +27,5 @@ class IngestDocumentRequest(BaseModel):
     metadata: dict[str, str] | None = None
     # keep and register the file without ingesting it, e.g. a video: it gets no chunks or sections
     store_only: bool = False
+    # replace the content of the existing document of document_id, e.g. after it was edited
+    replace: bool = False
