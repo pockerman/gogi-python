@@ -13,4 +13,11 @@ class DocumentMetadata(BaseModel):
     chunk_count: int = 0
     page_count: int | None = None
     word_count: int | None = None
+    # the metadata the document was ingested with; each of its chunks has it too
     custom_metadata: dict[str, str] | None = None
+    content_type: str | None = None
+    # the status of the document's ingestion job, e.g. PENDING, COMPLETED or FAILED
+    status: str | None = None
+    job_id: str | None = None
+    # the size of the uploaded file; 0 for documents ingested before uploads were kept
+    size_bytes: int = 0

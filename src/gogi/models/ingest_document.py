@@ -16,7 +16,8 @@ class IngestDocumentJob(BaseModel):
 class IngestDocumentRequest(BaseModel):
     index_name: str
     filename: str
-    document_id: str
+    # chosen by the platform if empty
+    document_id: str = ""
     chunk_strategy: str
     embeddings_model: str
     embeddings_client: str
@@ -24,3 +25,7 @@ class IngestDocumentRequest(BaseModel):
     content: bytes
     content_type: str
     metadata: dict[str, str] | None = None
+    # keep and register the file without ingesting it, e.g. a video: it gets no chunks or sections
+    store_only: bool = False
+    # replace the content of the existing document of document_id, e.g. after it was edited
+    replace: bool = False

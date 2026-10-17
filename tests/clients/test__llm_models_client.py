@@ -528,3 +528,22 @@ def test_run_stream_returns_the_provider(client, llm_request):
     received = list(client.run_stream(llm_request))
 
     assert [chunk.provider for chunk in received] == ["openai", "openai"]
+
+
+def test_a_response_format_from_a_model():
+    import json
+
+    from pydantic import BaseModel
+
+    from gogi.models.llm.llm_response_format import LLMRespnseFormat, LLMResponseFormat
+
+    class Quiz(BaseModel):
+        questions: list[str]
+
+    response_format = LLMResponseFormat.json_schema(Quiz)
+
+    assert response_format.response_type == "json_schema"
+    assert json.loads(response_format.response_schema_json)["properties"]["questions"]["type"] == "array"
+    assert LLMResponseFormat.json_object().response_type == "json_object"
+    # the original, misspelled name still works
+    assert LLMRespnseFormat is LLMResponseFormat
