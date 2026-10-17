@@ -199,3 +199,63 @@ def test_ingest_document_streams_a_large_document_in_parts_under_the_message_lim
 
     assert all(len(part.chunk) <= 1024 * 1024 for part in sent[1:])
     assert b"".join(part.chunk for part in sent[1:]) == content
+
+
+# ---------------------------------------------------------------------------
+# sections and download
+# ---------------------------------------------------------------------------
+
+
+def _section(position, title, level, page_start=0, page_end=0):
+    return document_service_pb2.DocumentSection(
+        position=position, title=title, level=level, page_start=page_start, page_end=page_end
+    )
+
+
+def test_list_sections(client):
+    client._stub.ListDocumentSections.return_value = document_service_pb2.ListDocumentSectionsResponse(
+        sections=[_section(1, "Page 1", 1, 1, 1), _section(2, "2.1 Linear elements", 2)]
+    )
+
+    sections = client.list_sections("maria--aeronautics", "fem-notes")
+
+    assert [(s.position, s.title, s.level, s.page_start) for s in sections] == [
+        (1, "Page 1", 1, 1),
+        (2, "2.1 Linear elements", 2, None),
+    ]
+    request = client._stub.ListDocumentSections.call_args.args[0]
+    assert (request.index_name, request.document_id) == ("maria--aeronautics", "fem-notes")
+
+
+def test_get_section_with_its_subsections(client):
+    client._stub.GetDocumentSection.return_value = document_service_pb2.GetDocumentSectionResponse(
+        sections=[
+            document_service_pb2.DocumentSectionContent(section=_section(2, "2 Shape functions", 1), content="shape"),
+            document_service_pb2.DocumentSectionContent(section=_section(3, "2.1 Linear", 2), content="linear"),
+        ]
+    )
+
+    parts = client.get_section("maria--aeronautics", "fem-notes", 2)
+
+    assert [(p.section.title, p.content) for p in parts] == [("2 Shape functions", "shape"), ("2.1 Linear", "linear")]
+    request = client._stub.GetDocumentSection.call_args.args[0]
+    assert (request.position, request.include_subsections) == (2, True)
+
+
+def test_download_document_joins_its_parts(client):
+    client._stub.DownloadDocument.return_value = iter(
+        [
+            document_service_pb2.DownloadDocumentResponse(
+                document=document_service_pb2.DocumentMetadata(
+                    document_id="fem-notes", index_name="maria--aeronautics", filename="fem-notes.md"
+                )
+            ),
+            document_service_pb2.DownloadDocumentResponse(chunk=b"# 1 Intro"),
+            document_service_pb2.DownloadDocumentResponse(chunk=b"duction\n"),
+        ]
+    )
+
+    document, content = client.download_document("maria--aeronautics", "fem-notes")
+
+    assert document.filename == "fem-notes.md"
+    assert content == b"# 1 Introduction\n"

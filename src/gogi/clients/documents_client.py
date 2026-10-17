@@ -2,6 +2,7 @@ from datetime import datetime
 
 from gogi.clients.base_client import BaseClient
 from gogi.models.document_metadata import DocumentMetadata
+from gogi.models.document_section import DocumentSection, DocumentSectionContent
 from gogi.models.ingest_document import IngestDocumentJob, IngestDocumentRequest
 from gogi.models.search_documents import DocumentChunk, SearchDocumentsRequest, SearchDocumentsResponse
 from gogi.v1.data import document_service_pb2, document_service_pb2_grpc
@@ -26,6 +27,16 @@ class DocumentsClient(BaseClient):
             job_id=resp.job_id or None,
             size_bytes=resp.size_bytes,
             **({"ingested_at": datetime.fromisoformat(resp.created_at)} if resp.created_at else {}),
+        )
+
+    @staticmethod
+    def proto_to_section(resp) -> DocumentSection:
+        return DocumentSection(
+            position=resp.position,
+            title=resp.title,
+            level=resp.level,
+            page_start=resp.page_start or None,
+            page_end=resp.page_end or None,
         )
 
     @staticmethod
@@ -122,6 +133,39 @@ class DocumentsClient(BaseClient):
         view = memoryview(content)
         for start in range(0, len(view), UPLOAD_CHUNK_BYTES):
             yield document_service_pb2.UploadDocumentRequest(chunk=bytes(view[start : start + UPLOAD_CHUNK_BYTES]))
+
+    def list_sections(self, index_name: str, document_id: str) -> list[DocumentSection]:
+        """The document's sections in order; a document has none until its ingestion has completed."""
+        request = document_service_pb2.ListDocumentSectionsRequest(index_name=index_name, document_id=document_id)
+        resp = self._stub.ListDocumentSections(request, metadata=self.route_metadata)
+        return [self.proto_to_section(section) for section in resp.sections]
+
+    def get_section(
+        self, index_name: str, document_id: str, position: int, include_subsections: bool = True
+    ) -> list[DocumentSectionContent]:
+        """The text of the section at the position, followed by its subsections' if include_subsections."""
+        request = document_service_pb2.GetDocumentSectionRequest(
+            index_name=index_name,
+            document_id=document_id,
+            position=position,
+            include_subsections=include_subsections,
+        )
+        resp = self._stub.GetDocumentSection(request, metadata=self.route_metadata)
+        return [
+            DocumentSectionContent(section=self.proto_to_section(part.section), content=part.content)
+            for part in resp.sections
+        ]
+
+    def download_document(self, index_name: str, document_id: str) -> tuple[DocumentMetadata, bytes]:
+        """The document and its uploaded file, which the platform streams in parts."""
+        request = document_service_pb2.DownloadDocumentRequest(index_name=index_name, document_id=document_id)
+        document, parts = None, []
+        for message in self._stub.DownloadDocument(request, metadata=self.route_metadata):
+            if message.HasField("document"):
+                document = self.proto_to_doc_meta(message.document)
+            else:
+                parts.append(message.chunk)
+        return document, b"".join(parts)
 
     def get_document_ingest_job(self, job_id: str) -> IngestDocumentJob:
         """
