@@ -2,7 +2,7 @@ from .llm.llm_capabilities import LLMCapabilities
 from .llm.llm_fallback_config import LLMFallbackConfig, LLMFallbackModel, LLMRetryConfig
 from .llm.llm_function_definition import LLMFunctionDefinition
 from .llm.llm_memory_entry import LLMMemoryEntry
-from .llm.llm_message import LLMMessage
+from .llm.llm_message import LLMContentPart, LLMImage, LLMMessage
 from .llm.llm_model_info import LLMModelInfo
 from .llm.llm_response_format import LLMRespnseFormat, LLMResponseFormat
 from .llm.llm_run_request_config import LLMRunRequestConfig

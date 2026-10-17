@@ -64,6 +64,21 @@ class LLMModelsClientGRPCHelper:
             tool_call_id=msg.tool_call_id,
             name=msg.name,
             timestamp=msg.timestamp,
+            parts=[LLMModelsClientGRPCHelper.content_part_to_grpc(part) for part in msg.parts],
+        )
+
+    @staticmethod
+    def content_part_to_grpc(part) -> llm_message_pb2.ContentPart:
+        if part.image is None:
+            return llm_message_pb2.ContentPart(text=part.text or "")
+        image = part.image
+        if image.data is not None:
+            return llm_message_pb2.ContentPart(
+                image=llm_message_pb2.ImageContent(data=image.data, media_type=image.media_type)
+            )
+        document = llm_message_pb2.DocumentReference(index_name=image.index_name, document_id=image.document_id)
+        return llm_message_pb2.ContentPart(
+            image=llm_message_pb2.ImageContent(document=document, media_type=image.media_type)
         )
 
     @staticmethod
