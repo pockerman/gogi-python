@@ -547,3 +547,28 @@ def test_a_response_format_from_a_model():
     assert LLMResponseFormat.json_object().response_type == "json_object"
     # the original, misspelled name still works
     assert LLMRespnseFormat is LLMResponseFormat
+
+
+def test_a_message_with_images():
+    import pytest
+
+    from gogi.clients.grpc_helpers.llm_models_client_grpc_helpers import LLMModelsClientGRPCHelper
+    from gogi.models.llm.llm_message import LLMImage, LLMMessage
+
+    message = LLMMessage.user_with_images(
+        "What defects do you see?",
+        [
+            LLMImage(data=b"\x89PNG\r\n", media_type="image/png"),
+            LLMImage(index_name="elena--surveys", document_id="hull-port-bow"),
+        ],
+    )
+
+    grpc_message = LLMModelsClientGRPCHelper.request_message_to_grpc_message(message)
+
+    assert grpc_message.content == "What defects do you see?"
+    first, second = grpc_message.parts
+    assert first.image.data == b"\x89PNG\r\n" and first.image.media_type == "image/png"
+    assert second.image.document.index_name == "elena--surveys"
+    assert second.image.document.document_id == "hull-port-bow"
+    with pytest.raises(ValueError):
+        LLMImage(data=b"x", index_name="i", document_id="d")
