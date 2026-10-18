@@ -1,5 +1,6 @@
 import os
 
+from gogi.clients.credentials_client import CredentialsClient
 from gogi.clients.documents_client import DocumentsClient
 from gogi.clients.guardrails_client import GuardrailsClient
 from gogi.clients.health_client import HealthClient
@@ -24,14 +25,40 @@ class Gogi:
         gogi = Gogi()
         session = gogi.sessions.get_or_create(user_id="user-123")
         response = gogi.models.chat(model="gpt-4o", query="Hello")
+
+    Where gogi serves many applications, every call carries the key gogi gave the application:
+
+        gogi = Gogi(gateway_url="gogi.example.org:443", api_key="gogi_...")
+
+    Args:
+        gateway_url: the gateway, host:port.
+        api_key: the application's key; ``GOGI_API_KEY`` if not given. Not needed where gogi runs without keys.
+        root_certificates: PEM certificates to check the gateway's certificate against instead of the system's, e.g.
+            the certificate authority of a deployment without a domain; the file ``GOGI_GATEWAY_CA_FILE`` if not
+            given.
+        insecure: True for a plaintext channel, False for TLS; if not given, plaintext for localhost or with
+            ``GOGI_GATEWAY_INSECURE=1``, TLS otherwise.
     """
 
-    def __init__(self, gateway_url: str = "localhost:50051", logger=None):
+    def __init__(
+        self,
+        gateway_url: str = "localhost:50051",
+        logger=None,
+        api_key: str | None = None,
+        root_certificates: bytes | None = None,
+        insecure: bool | None = None,
+    ):
         if gateway_url:
             self.gateway_url = gateway_url
         else:
             self.gateway_url = os.getenv("GENAI_GATEWAY_URL", "localhost:50051")
         self.logger = logger
+        self.api_key = api_key or os.getenv("GOGI_API_KEY") or None
+        if root_certificates is None and os.getenv("GOGI_GATEWAY_CA_FILE"):
+            with open(os.environ["GOGI_GATEWAY_CA_FILE"], "rb") as ca_file:
+                root_certificates = ca_file.read()
+        self.root_certificates = root_certificates
+        self.insecure = insecure
 
         # Lazy initialization - clients created on first access
         self._llm_sessions: LLMSessionsClient | None = None
@@ -45,6 +72,14 @@ class Gogi:
         self._tools: LLMToolsClient | None = None
         self._evaluation = None
         self._workflows: WorkflowClient | None = None
+        self._credentials: CredentialsClient | None = None
+
+    @property
+    def credentials(self) -> CredentialsClient:
+        """The application's own credentials, e.g. its model providers' keys."""
+        if not self._credentials:
+            self._credentials = CredentialsClient(platform=self, logger=self.logger)
+        return self._credentials
 
     @property
     def documents(self) -> DocumentsClient:
