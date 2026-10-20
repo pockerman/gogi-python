@@ -97,8 +97,7 @@ if __name__ == "__main__":
         index_name=index.index_name,
         document_id=uuid.uuid4().hex,
         filename="my_first_doc.txt",
-        embeddings_model="clip",
-        embeddings_client="sentence-transformer",
+        embedding_models=["bge-small-en-v1.5"],
         chunk_strategy="fixed",
         metadata={"format": "txt", "author": "John Doe", "source": "generated"},
     )

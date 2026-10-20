@@ -50,8 +50,7 @@ The document is described by an `IngestDocumentRequest`:
 | `index_name`        | `my-first-doc-index`       | The index to ingest the document into           |
 | `document_id`       | A random UUID              | The document's unique id                        |
 | `filename`          | `my_first_doc.txt`         | The original filename                           |
-| `embeddings_client` | `sentence-transformer`     | The client used to compute the embeddings       |
-| `embeddings_model`  | `clip`                     | The model used to embed the chunks              |
+| `embedding_models`  | `["bge-small-en-v1.5"]`    | The models that embed the chunks; with none the document is only stored |
 | `chunk_strategy`    | `fixed`                    | How the document is split into chunks           |
 | `metadata`          | `format`, `author`, `source` | Custom metadata stored with the document      |
 
@@ -179,8 +178,7 @@ if __name__ == "__main__":
         index_name=index.index_name,
         document_id=uuid.uuid4().hex,
         filename="my_first_doc.txt",
-        embeddings_model="clip",
-        embeddings_client="sentence-transformer",
+        embedding_models=["bge-small-en-v1.5"],
         chunk_strategy="fixed",
         metadata={"format": "txt", "author": "John Doe", "source": "generated"},
     )

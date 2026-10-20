@@ -1,9 +1,10 @@
 from unittest.mock import MagicMock
 
 import pytest
+from pydantic import ValidationError
 
 from gogi.clients.documents_client import DocumentsClient
-from gogi.models.ingest_document import IngestDocumentRequest
+from gogi.models.ingest_document import IngestDocumentRequest, IngestStoredDocumentRequest
 from gogi.models.search_documents import SearchDocumentsRequest
 from gogi.v1.data import document_service_pb2
 
@@ -44,8 +45,7 @@ def test_search_documents_calls_stub(client):
             index_name="idx",
             query="what is this about?",
             top_k=3,
-            embeddings_model="text-embedding-3-small",
-            embeddings_client="openai",
+            embedding_model="text-embedding-3-small",
             document_ids=["doc-1"],
             metadata_filter={"lang": "en"},
         )
@@ -56,8 +56,7 @@ def test_search_documents_calls_stub(client):
     assert grpc_request.index_name == "idx"
     assert grpc_request.query == "what is this about?"
     assert grpc_request.top_k == 3
-    assert grpc_request.embeddings_model == "text-embedding-3-small"
-    assert grpc_request.embeddings_client == "openai"
+    assert grpc_request.embedding_model == "text-embedding-3-small"
     assert list(grpc_request.document_ids) == ["doc-1"]
     assert dict(grpc_request.metadata_filter) == {"lang": "en"}
 
@@ -65,11 +64,7 @@ def test_search_documents_calls_stub(client):
 def test_search_documents_without_optional_filters(client):
     client._stub.SearchDocuments.return_value = MagicMock(chunks=[])
 
-    client.search_documents(
-        SearchDocumentsRequest(
-            index_name="idx", query="q", embeddings_model="text-embedding-3-small", embeddings_client="openai"
-        )
-    )
+    client.search_documents(SearchDocumentsRequest(index_name="idx", query="q", embedding_model="bge-small-en-v1.5"))
 
     grpc_request = client._stub.SearchDocuments.call_args.args[0]
     assert grpc_request.top_k == 5
@@ -83,9 +78,7 @@ def test_search_documents_serializes_chunks(client):
     )
 
     response = client.search_documents(
-        SearchDocumentsRequest(
-            index_name="idx", query="q", embeddings_model="text-embedding-3-small", embeddings_client="openai"
-        )
+        SearchDocumentsRequest(index_name="idx", query="q", embedding_model="bge-small-en-v1.5")
     )
 
     assert [c.chunk_id for c in response.chunks] == ["c-1", "c-2"]
@@ -97,7 +90,7 @@ def test_search_documents_serializes_chunks(client):
 
 def test_search_documents_rejects_non_positive_top_k():
     with pytest.raises(ValueError):
-        SearchDocumentsRequest(index_name="idx", query="q", top_k=0, embeddings_model="m", embeddings_client="openai")
+        SearchDocumentsRequest(index_name="idx", query="q", top_k=0, embedding_model="m")
 
 
 # ---------------------------------------------------------------------------
@@ -155,7 +148,7 @@ def test_delete_document(client):
 # ---------------------------------------------------------------------------
 
 
-def _ingest(client, content: bytes, store_only: bool = False, replace: bool = False):
+def _ingest(client, content: bytes, embedding_models=("bge-small-en-v1.5", "all-MiniLM-L6-v2"), replace=False):
     sent = []
 
     def upload(parts, metadata):
@@ -172,9 +165,7 @@ def _ingest(client, content: bytes, store_only: bool = False, replace: bool = Fa
             content_type="application/pdf",
             metadata={"subject": "numerical-methods"},
             chunk_strategy="fixed",
-            embeddings_model="clip",
-            embeddings_client="sentence-transformer",
-            store_only=store_only,
+            embedding_models=list(embedding_models),
             replace=replace,
         )
     )
@@ -272,10 +263,51 @@ def test_download_part_of_a_document(client):
     assert (request.offset, request.length) == (100, 50)
 
 
-def test_ingest_a_document_without_ingesting_it(client):
-    _, sent = _ingest(client, b"video bytes", store_only=True)
+def test_ingest_a_document_with_the_models_named(client):
+    _, sent = _ingest(client, b"text")
 
-    assert sent[0].info.store_only is True
+    assert list(sent[0].info.embedding_models) == ["bge-small-en-v1.5", "all-MiniLM-L6-v2"]
+
+
+def test_store_a_document_without_ingesting_it(client):
+    _, sent = _ingest(client, b"video bytes", embedding_models=())
+
+    assert list(sent[0].info.embedding_models) == []
+
+
+def test_ingest_a_stored_document_later(client):
+    client._stub.IngestStoredDocument.return_value = document_service_pb2.IngestDocumentJobResponse(
+        job_id="job-2", index_name="maria--aeronautics", document_id="lecture-3", status="PENDING"
+    )
+
+    job = client.ingest_stored_document(
+        IngestStoredDocumentRequest(
+            index_name="maria--aeronautics", document_id="lecture-3", embedding_models=["all-MiniLM-L6-v2"]
+        )
+    )
+
+    assert (job.job_id, job.status) == ("job-2", "PENDING")
+    request = client._stub.IngestStoredDocument.call_args.args[0]
+    assert (request.index_name, request.document_id) == ("maria--aeronautics", "lecture-3")
+    assert list(request.embedding_models) == ["all-MiniLM-L6-v2"]
+
+
+def test_ingesting_a_stored_document_names_a_model():
+    with pytest.raises(ValidationError):
+        IngestStoredDocumentRequest(index_name="maria--aeronautics", document_id="lecture-3", embedding_models=[])
+
+
+def test_a_document_lists_the_models_that_embedded_it():
+    document = DocumentsClient.proto_to_doc_meta(
+        document_service_pb2.DocumentMetadata(
+            document_id="fem-notes",
+            index_name="maria--aeronautics",
+            filename="fem-notes.md",
+            embedding_models=["bge-small-en-v1.5"],
+        )
+    )
+
+    assert document.embedding_models == ["bge-small-en-v1.5"]
 
 
 def test_replace_a_documents_content(client):

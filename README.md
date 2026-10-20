@@ -71,8 +71,7 @@ if __name__ == "__main__":
             filename="my_first_doc.txt",
             content=b"This is my first document for ingestion.",
             content_type="UNKNOWN",
-            embeddings_model="clip",
-            embeddings_client="sentence-transformer",
+            embedding_models=["bge-small-en-v1.5"],
             chunk_strategy="fixed",
             metadata={"format": "txt", "author": "John Doe"},
         )

@@ -2,6 +2,7 @@ import os
 
 from gogi.clients.credentials_client import CredentialsClient
 from gogi.clients.documents_client import DocumentsClient
+from gogi.clients.embeddings_client import EmbeddingsClient
 from gogi.clients.guardrails_client import GuardrailsClient
 from gogi.clients.health_client import HealthClient
 from gogi.clients.indexes_client import IndexesClient
@@ -73,6 +74,7 @@ class Gogi:
         self._evaluation = None
         self._workflows: WorkflowClient | None = None
         self._credentials: CredentialsClient | None = None
+        self._embeddings: EmbeddingsClient | None = None
 
     @property
     def credentials(self) -> CredentialsClient:
@@ -80,6 +82,13 @@ class Gogi:
         if not self._credentials:
             self._credentials = CredentialsClient(platform=self, logger=self.logger)
         return self._credentials
+
+    @property
+    def embeddings(self) -> EmbeddingsClient:
+        """The embedding models documents are ingested and searched with, and the application's own."""
+        if not self._embeddings:
+            self._embeddings = EmbeddingsClient(platform=self, logger=self.logger)
+        return self._embeddings
 
     @property
     def documents(self) -> DocumentsClient:

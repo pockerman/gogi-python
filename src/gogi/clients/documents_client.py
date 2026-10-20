@@ -3,7 +3,7 @@ from datetime import datetime
 from gogi.clients.base_client import BaseClient
 from gogi.models.document_metadata import DocumentMetadata
 from gogi.models.document_section import DocumentSection, DocumentSectionContent
-from gogi.models.ingest_document import IngestDocumentJob, IngestDocumentRequest
+from gogi.models.ingest_document import IngestDocumentJob, IngestDocumentRequest, IngestStoredDocumentRequest
 from gogi.models.search_documents import DocumentChunk, SearchDocumentsRequest, SearchDocumentsResponse
 from gogi.v1.data import document_service_pb2, document_service_pb2_grpc
 
@@ -26,6 +26,7 @@ class DocumentsClient(BaseClient):
             status=resp.status or None,
             job_id=resp.job_id or None,
             size_bytes=resp.size_bytes,
+            embedding_models=list(resp.embedding_models),
             **({"ingested_at": datetime.fromisoformat(resp.created_at)} if resp.created_at else {}),
         )
 
@@ -96,14 +97,14 @@ class DocumentsClient(BaseClient):
 
     def ingest_document(self, request: IngestDocumentRequest) -> IngestDocumentJob:
         """
-        Ingest a document into the Gogi platform.
-        This will create a new document associated with the specified index,
-        and will kick off an asynchronous job to process the document (e.g., chunking, embedding, etc.).
+        Upload a document to an index, and ingest it with the embedding models the request names.
+        With no models the document is only stored; ``ingest_stored_document`` ingests it later. With models,
+        an asynchronous job chunks the document for each model and embeds the chunks.
         The content is streamed to the platform in parts of `UPLOAD_CHUNK_BYTES`, so documents larger
         than a single gRPC message (4 MB) can be ingested, up to the platform's upload limit.
         Args:
             request (IngestDocumentRequest): the index to ingest the document into, its filename, content,
-                metadata, and how to chunk and embed it. The platform chooses the document_id if it's empty.
+                metadata, and the models to embed it with. The platform chooses the document_id if it's empty.
         Returns:
             IngestDocumentJob: An object representing the ingest job that was created to process the document.
             This includes information about the job status, progress, and any errors that may have occurred.
@@ -118,14 +119,27 @@ class DocumentsClient(BaseClient):
             filename=request.filename,
             content_type=request.content_type,
             metadata=request.metadata,
-            embeddings_client=request.embeddings_client,
             batch_size=request.batch_size,
-            embeddings_model=request.embeddings_model,
+            embedding_models=request.embedding_models,
             chunk_strategy=request.chunk_strategy,
-            store_only=request.store_only,
             replace=request.replace,
         )
         resp = self._stub.UploadDocument(self._upload_parts(info, request.content), metadata=self.route_metadata)
+        return self.proto_to_ingest_job(resp)
+
+    def ingest_stored_document(self, request: IngestStoredDocumentRequest) -> IngestDocumentJob:
+        """Chunks a document the index already has and embeds it with the models the request names, e.g. one
+        stored without models, or one to embed with another model too. A running ingestion of the document is
+        stopped. Raises ``grpc.RpcError`` with ``NOT_FOUND`` for a model gogi neither provides nor has registered
+        for the application, and ``FAILED_PRECONDITION`` for one it can't use, e.g. OpenAI's without a key."""
+        proto_request = document_service_pb2.IngestStoredDocumentRequest(
+            index_name=request.index_name,
+            document_id=request.document_id,
+            embedding_models=request.embedding_models,
+            chunk_strategy=request.chunk_strategy,
+            batch_size=request.batch_size,
+        )
+        resp = self._stub.IngestStoredDocument(proto_request, metadata=self.route_metadata)
         return self.proto_to_ingest_job(resp)
 
     @staticmethod
@@ -194,8 +208,8 @@ class DocumentsClient(BaseClient):
     def search_documents(self, request: SearchDocumentsRequest) -> SearchDocumentsResponse:
         """
         Retrieve the chunks of an index that are most similar to a query.
-        The query is embedded server-side with the given embeddings client and model,
-        so these must match the ones used when the documents were ingested.
+        The query is embedded server-side with the request's embedding model, and only the documents
+        that model embedded are searched.
         Args:
             request (SearchDocumentsRequest): The index to search, the query and the number of chunks to return.
         Returns:
@@ -208,8 +222,7 @@ class DocumentsClient(BaseClient):
             index_name=request.index_name,
             query=request.query,
             top_k=request.top_k,
-            embeddings_model=request.embeddings_model,
-            embeddings_client=request.embeddings_client,
+            embedding_model=request.embedding_model,
             document_ids=request.document_ids,
             metadata_filter=request.metadata_filter,
         )

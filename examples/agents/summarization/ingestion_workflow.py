@@ -54,8 +54,7 @@ def ingest_document_workflow(
     document_id: str,
     filename: str,
     content_b64: str,
-    embeddings_client: str,
-    embeddings_model: str,
+    embedding_model: str,
 ) -> dict:
     """Embed a user document and store it in the agent's index.
 
@@ -65,8 +64,6 @@ def ingest_document_workflow(
         document_id: Id the document is stored under. The RAG pipeline uses it to restrict retrieval.
         filename: Original name of the uploaded file.
         content_b64: The file contents, base64 encoded so they can travel inside the job's JSON input.
-        embeddings_client: The embeddings provider to embed the document's chunks with.
-        embeddings_model: The embeddings model to embed the document's chunks with.
     """
 
     # the workflow runs in its own container, so it opens its own connection to the platform
@@ -74,7 +71,7 @@ def ingest_document_workflow(
 
     try:
         platform.workflows.update_job_progress(
-            UpdateJobProgressRequest(job_id=job_id, progress_message=f"Embedding {filename} with {embeddings_model}")
+            UpdateJobProgressRequest(job_id=job_id, progress_message=f"Embedding {filename} with {embedding_model}")
         )
 
         content_type, _ = mimetypes.guess_type(filename)
@@ -86,8 +83,7 @@ def ingest_document_workflow(
                 content=base64.b64decode(content_b64),
                 content_type=content_type or "UNKNOWN",
                 chunk_strategy=CHUNK_STRATEGY,
-                embeddings_client=embeddings_client,
-                embeddings_model=embeddings_model,
+                embedding_models=[embedding_model],
                 metadata={"filename": filename},
             )
         )
@@ -133,8 +129,7 @@ def submit_ingestion_job(
     document_id: str,
     filename: str,
     content: bytes,
-    embeddings_client: str,
-    embeddings_model: str,
+    embedding_model: str,
 ) -> tuple[str, dict]:
     """Create an ingestion job for a document. Returns the job id and the job input."""
     job_input = {
@@ -142,8 +137,7 @@ def submit_ingestion_job(
         "document_id": document_id,
         "filename": filename,
         "content_b64": base64.b64encode(content).decode("ascii"),
-        "embeddings_client": embeddings_client,
-        "embeddings_model": embeddings_model,
+        "embedding_model": embedding_model,
     }
     response = platform.workflows.create_job(
         CreateJobRequest(workflow_id=workflow_id, input_json=json.dumps(job_input))

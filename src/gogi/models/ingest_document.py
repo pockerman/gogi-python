@@ -18,14 +18,24 @@ class IngestDocumentRequest(BaseModel):
     filename: str
     # chosen by the platform if empty
     document_id: str = ""
-    chunk_strategy: str
-    embeddings_model: str
-    embeddings_client: str
+    chunk_strategy: str = "fixed"
+    # the models that embed the document's chunks, each into a collection of its own, e.g.
+    # ["bge-small-en-v1.5"]; with none the document is only stored, e.g. a video, and can be ingested later
+    embedding_models: list[str] = Field(default_factory=list)
     batch_size: int = 10
     content: bytes
     content_type: str
     metadata: dict[str, str] | None = None
-    # keep and register the file without ingesting it, e.g. a video: it gets no chunks or sections
-    store_only: bool = False
     # replace the content of the existing document of document_id, e.g. after it was edited
     replace: bool = False
+
+
+class IngestStoredDocumentRequest(BaseModel):
+    """Chunks a document the index already has and embeds it with the models; ingesting again with a model
+    replaces what that model embedded of it, and keeps what other models embedded"""
+
+    index_name: str
+    document_id: str
+    embedding_models: list[str] = Field(..., min_length=1)
+    chunk_strategy: str = "fixed"
+    batch_size: int = 10
