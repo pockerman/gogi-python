@@ -6,8 +6,8 @@ from gogi.models.llm.llm_tool_definition import LLMToolCall
 
 
 class LLMImage(BaseModel):
-    """An image for a model: its bytes, or a document of the platform's, e.g. a photo uploaded with
-    ``store_only``, which the platform reads itself, so a large image needn't travel in the request."""
+    """An image for a model: its bytes, or a document of the platform's, e.g. a photo uploaded without
+    embedding models, which the platform reads itself, so a large image needn't travel in the request."""
 
     data: bytes | None = None
     # the index and id of the document that holds the image

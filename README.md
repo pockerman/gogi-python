@@ -71,8 +71,7 @@ if __name__ == "__main__":
             filename="my_first_doc.txt",
             content=b"This is my first document for ingestion.",
             content_type="UNKNOWN",
-            embeddings_model="clip",
-            embeddings_client="sentence-transformer",
+            embedding_models=["bge-small-en-v1.5"],
             chunk_strategy="fixed",
             metadata={"format": "txt", "author": "John Doe"},
         )
@@ -95,3 +94,21 @@ if __name__ == "__main__":
     deleted = platform.indexes.delete_index(index_name=index.index_name)
     rich_print(f"Deleted index: {deleted}")
 ```
+
+## Applications and keys
+
+Where one gogi serves many applications, every call carries the key gogi gave the application, and what the
+application makes is its own. Give the key to `Gogi`, or set `GOGI_API_KEY`:
+
+```python
+platform = Gogi(gateway_url="gogi.example.org:443", api_key="gogi_...")
+
+# the application's calls to Anthropic are made with its own key
+platform.credentials.store("anthropic", "sk-ant-...")
+print([credential.name for credential in platform.credentials.list()])  # never their values
+```
+
+A gateway on `localhost`, or with `GOGI_GATEWAY_INSECURE=1`, is called over plaintext; any other over TLS, checked
+against the system's certificates. For a deployment with its own certificate authority, e.g. one without a domain,
+give its certificate as `root_certificates`, or its file as `GOGI_GATEWAY_CA_FILE`; `insecure=True` or `False`
+decides the channel outright. See gogi's [applications](https://github.com/pockerman/gogi/blob/main/docs/applications.md).

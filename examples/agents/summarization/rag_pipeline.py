@@ -32,8 +32,7 @@ class RAGPipeline:
         index_name: str,
         prompts: list[RegisteredPrompt],
         llm_config: LLMRunRequestConfig,
-        embeddings_client: str,
-        embeddings_model: str,
+        embedding_model: str,
         top_k: int = 8,
         min_score: float = 0.0,
     ):
@@ -41,8 +40,7 @@ class RAGPipeline:
         self.index_name = index_name
         self.prompts = prompts
         self.llm_config = llm_config
-        self.embeddings_client = embeddings_client
-        self.embeddings_model = embeddings_model
+        self.embedding_model = embedding_model
         self.top_k = top_k
         self.min_score = min_score
 
@@ -52,8 +50,7 @@ class RAGPipeline:
                 index_name=self.index_name,
                 query=query,
                 top_k=self.top_k,
-                embeddings_client=self.embeddings_client,
-                embeddings_model=self.embeddings_model,
+                embedding_model=self.embedding_model,
                 document_ids=document_ids,
             )
         )

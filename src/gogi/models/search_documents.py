@@ -7,8 +7,7 @@ class SearchDocumentsRequest(BaseModel):
     index_name: str
     query: str
     top_k: int = Field(5, gt=0, description="Maximum number of chunks to return")
-    embeddings_model: str = Field(..., description="Must match the model the documents were ingested with")
-    embeddings_client: str = Field(..., description="Must match the client the documents were ingested with")
+    embedding_model: str = Field(..., description="One of the models the documents were ingested with")
     document_ids: list[str] | None = Field(None, description="Restrict the search to these documents")
     metadata_filter: dict[str, str] | None = Field(None, description="Exact-match filters on the chunk metadata")
 

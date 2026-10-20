@@ -21,3 +21,5 @@ class DocumentMetadata(BaseModel):
     job_id: str | None = None
     # the size of the uploaded file; 0 for documents ingested before uploads were kept
     size_bytes: int = 0
+    # the models that have embedded the document: a search with one of them can find it
+    embedding_models: list[str] = Field(default_factory=list)

@@ -44,8 +44,7 @@ from gogi.models import LLMRunRequestConfig
 GOGI_GATEWAY_URL = os.getenv("GOGI_GATEWAY_URL", "localhost:50051")
 OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini")
 DEFAULT_LLM_PROVIDER = "openai"
-DEFAULT_EMBEDDINGS_CLIENT = "openai"
-DEFAULT_EMBEDDINGS_MODEL = "text-embedding-3-small"
+DEFAULT_EMBEDDING_MODEL = "bge-small-en-v1.5"
 DEFAULT_PROMPT_FILE = Path(__file__).parent / "summarization_prompts.toml"
 
 
@@ -57,8 +56,7 @@ class SummarizationAgent:
         prompt_file: Path = DEFAULT_PROMPT_FILE,
         run_workflows_locally: bool = True,
         llm_provider: str = DEFAULT_LLM_PROVIDER,
-        embeddings_client: str = DEFAULT_EMBEDDINGS_CLIENT,
-        embeddings_model: str = DEFAULT_EMBEDDINGS_MODEL,
+        embedding_model: str = DEFAULT_EMBEDDING_MODEL,
     ):
         """
         Args:
@@ -70,8 +68,7 @@ class SummarizationAgent:
                 job the agent creates. Set it to False once the workflow is deployed on the platform, in which
                 case the platform runtime picks up the jobs and the agent only waits for them to finish.
             llm_provider: The LLM provider used to generate summaries through the Gogi LLM gateway.
-            embeddings_client: The embeddings provider used to embed documents and queries.
-            embeddings_model: The embeddings model used to embed documents and queries. Must be the same
+            embedding_model: The embedding model used to embed documents and queries. Must be the same
                 for ingestion and retrieval, since a query is only comparable to chunks embedded with it.
         """
         self.platform = platform
@@ -80,21 +77,19 @@ class SummarizationAgent:
         self.prompt_file = prompt_file
         self.run_workflows_locally = run_workflows_locally
         self.llm_provider = llm_provider
-        self.embeddings_client = embeddings_client
-        self.embeddings_model = embeddings_model
+        self.embedding_model = embedding_model
 
         self._workflow_id: str | None = None
         self._pipeline: RAGPipeline | None = None
 
     def setup(self) -> None:
         """Create the user's index, register the prompt file and register the ingestion workflow."""
-        rich_print(f"[dim]Embeddings: {self.embeddings_client}/{self.embeddings_model}[/dim]")
+        rich_print(f"[dim]Embeddings: {self.embedding_model}[/dim]")
         rich_print(f"[dim]Chat model: {self.llm_provider}/{OPENAI_CHAT_MODEL}[/dim]")
         rich_print(f"[dim]Prompt file: {self.prompt_file}[/dim]")
 
-        # create_index is idempotent server-side: it reuses the index if it already exists and
-        # always (re)ensures its vector store collection, so it's safe (and self-healing) to
-        # call on every run instead of checking list_owner_indexes first.
+        # create_index is idempotent server-side: it reuses the index if it already exists, so it's
+        # safe to call on every run instead of checking list_owner_indexes first.
         self.platform.indexes.create_index(index_name=self.index_name, owner_name=self.owner)
         logger.info(f"Index ready: {self.index_name}")
 
@@ -116,8 +111,7 @@ class SummarizationAgent:
             llm_config=LLMRunRequestConfig(
                 model=OPENAI_CHAT_MODEL, provider=self.llm_provider, temperature=0.1, max_tokens=1000
             ),
-            embeddings_client=self.embeddings_client,
-            embeddings_model=self.embeddings_model,
+            embedding_model=self.embedding_model,
         )
 
     def upload(self, path: Path) -> str:
@@ -133,8 +127,7 @@ class SummarizationAgent:
             document_id=document_id,
             filename=path.name,
             content=path.read_bytes(),
-            embeddings_client=self.embeddings_client,
-            embeddings_model=self.embeddings_model,
+            embedding_model=self.embedding_model,
         )
         logger.info(f"Submitted ingestion job {job_id} for {path.name}")
 
@@ -204,14 +197,9 @@ if __name__ == "__main__":
         help="The LLM provider used to generate summaries",
     )
     parser.add_argument(
-        "--embeddings-client",
-        default=DEFAULT_EMBEDDINGS_CLIENT,
-        help="The embeddings provider used to embed documents and queries",
-    )
-    parser.add_argument(
-        "--embeddings-model",
-        default=DEFAULT_EMBEDDINGS_MODEL,
-        help="The embeddings model used to embed documents and queries",
+        "--embedding-model",
+        default=DEFAULT_EMBEDDING_MODEL,
+        help="The embedding model used to embed documents and queries",
     )
     args = parser.parse_args()
 
@@ -223,8 +211,7 @@ if __name__ == "__main__":
         prompt_file=args.prompt_file,
         run_workflows_locally=not args.deployed,
         llm_provider=args.llm_provider,
-        embeddings_client=args.embeddings_client,
-        embeddings_model=args.embeddings_model,
+        embedding_model=args.embedding_model,
     )
     agent.setup()
 
